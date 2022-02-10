@@ -5,7 +5,7 @@ Make an exess input file (json) from a cif file. A sphere of molecules are creat
 ## Dependences
 - qcelemental
 - numpy
-- qcelemental
+- PyCifRW
 - QCP (https://github.com/zoeseeger/qcp-python-app) and change sys.path.append(path_to_qcp)
 
 ## Usage
