@@ -10,10 +10,11 @@ Make an exess input file (json) from a cif file. A sphere of molecules are creat
 
 ## Usage
 
-cif2json.py inputfile.inp
+`cif2json.py inputfile.inp`
 
 ### Input file
-`// [C1mpyr][NTf2]
+```
+// [C1mpyr][NTf2]
 Title        : c1mpyr ntf2
 Cif          : ../P11NTF2.cif
 Ionic        : Y
@@ -22,4 +23,5 @@ Anion        : C 2 F 6 N 1 O 4 S 2
 Rgiven       : Y
 Rsphere      : 22.0
 Rdim         : 0.0
-Rtrim        : 0.0`
+Rtrim        : 0.0
+```
