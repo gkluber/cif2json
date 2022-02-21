@@ -1029,7 +1029,7 @@ def make_sphere_from_whole_unit_cell(fragList_uc, atmList_uc, mx, my, mz, Nx, Ny
 ### JSON --------------------------------------------
 
 
-def exess_mbe_template(frag_ids, frag_charges, symbols, geometry, method="RIMP2", nfrag_stop=None, basis="cc-pVDZ", auxbasis="cc-pVDZ-RIFIT", number_checkpoints=3):
+def exess_mbe_template(frag_ids, frag_charges, symbols, geometry, method="RIMP2", nfrag_stop=None, basis="cc-pVDZ", auxbasis="cc-pVDZ-RIFIT", number_checkpoints=3, ref_mon=0):
     """Json many body energy exess template."""
 
     # FRAGS
@@ -1061,15 +1061,14 @@ def exess_mbe_template(frag_ids, frag_charges, symbols, geometry, method="RIMP2"
             },
             "frag": {
                 "method"                : "MBE",
+                "level"                 : 4,
                 "ngpus_per_group"       : 4,
                 "lattice_energy_calc"   : True,
-                "reference_monomer"     : 0,
+                "reference_monomer"     : ref_mon,
                 "dimer_cutoff"          : 1000,
                 "dimer_mp2_cutoff"      : 20,
-                "run_trimers"           : True,
                 "trimer_cutoff"         : 40,
                 "trimer_mp2_cutoff"     : 20,
-                "run_tetramers"         : True,
                 "tetramer_cutoff"       : 25,
                 "tetramer_mp2_cutoff"   : 10
             },
@@ -1098,7 +1097,7 @@ def exess_mbe_template(frag_ids, frag_charges, symbols, geometry, method="RIMP2"
     return dict_
 
 
-def make_json_from_frag_ids(frag_indexs, fragList, atmList, nfrag_stop=None, basis="cc-pVDZ", auxbasis="cc-pVDZ-RIFIT", number_checkpoints=3):
+def make_json_from_frag_ids(frag_indexs, fragList, atmList, nfrag_stop=None, basis="cc-pVDZ", auxbasis="cc-pVDZ-RIFIT", number_checkpoints=3, ref_mon=0):
 
     symbols      = []
     frag_ids     = []
@@ -1117,7 +1116,7 @@ def make_json_from_frag_ids(frag_indexs, fragList, atmList, nfrag_stop=None, bas
             geometry.extend([atmList[id]['x'], atmList[id]['y'], atmList[id]['z']])
             xyz_lines.append(f"{atmList[id]['sym']} {atmList[id]['x']} {atmList[id]['y']} {atmList[id]['z']}\n")
     # TO JSON
-    json_dict = exess_mbe_template(frag_ids, frag_charges, symbols, geometry, nfrag_stop, basis, auxbasis, number_checkpoints)
+    json_dict = exess_mbe_template(frag_ids, frag_charges, symbols, geometry, nfrag_stop, basis, auxbasis, number_checkpoints, ref_mon=ref_mon)
     json_lines = format_json_input_file(json_dict)
 
     return json_lines, xyz_lines
@@ -1253,33 +1252,6 @@ def write_file(filename, lines):
             w.write(line + '\n')
 
 
-def write_dimers(fragList, atmList, center_ip_id, num_frags_per_job):
-    """Write json and xyz for each dimer with central ion pair."""
-
-    def chunk(list_, n):
-        """Turn list into list of lists where inner list has length n."""
-
-        for i in range(0, len(list_), n):
-            yield list_[i:i + n]
-
-    try:
-        os.mkdir("dimers")
-    except:
-        pass
-
-    inputs = []
-    for frag in fragList:
-        if frag != fragList[center_ip_id]:
-            json_lines, lines = make_json_from_frag_ids([frag['grp'], center_ip_id], fragList, atmList, number_checkpoints=0)
-            write_file(f"dimers/frag-{frag['grp']}.json", json_lines)
-            write_xyz_zoe(f"dimers/frag-{frag['grp']}.xyz", lines)
-            inputs.append(f"frag-{frag['grp']}.json")
-    # JOB FILES
-    input_lists = list(chunk(inputs, num_frags_per_job))
-    for val, input_list in enumerate(input_lists):
-        write_job_dimers(f"dimers/{val}.job", input_list)
-
-
 def write_job_dimers(filename, inputfile_list):
     '''Write job with for list input files.'''
 
@@ -1314,7 +1286,7 @@ def write_job_dimers(filename, inputfile_list):
 ### MAIN --------------------------------------------
 
 
-def main(inputfile, debug=False, dist_cutoff='smallest', pair_ions="all", dimer_calcs=False):
+def main(inputfile, debug=False, dist_cutoff='smallest', pair_ions="all"):
 
     timer = Timer(to_print=debug)
 
@@ -1384,16 +1356,12 @@ def main(inputfile, debug=False, dist_cutoff='smallest', pair_ions="all", dimer_
         write_central_frag(fragList_uc, atmList_uc, center_frag_id, mx, my, mz)
 
     # Create overall json
-    json_lines, xyz_lines = make_json_from_frag_ids(list(range(len(fragList))), fragList, atmList)
+    json_lines, xyz_lines = make_json_from_frag_ids(list(range(len(fragList))), fragList, atmList, ref_mon=center_frag_id)
     write_file("sphere.xyz", xyz_lines)
     write_file("sphere.json", json_lines)
-
-    # Create dimer calcs in subdir
-    if dimer_calcs:
-        write_dimers(fragList, atmList, center_frag_id, num_frags_per_job=120)
 
 
 if __name__ == "__main__":
     # dist_cutoff: 'smallest' or 'com'
     # pair_ions: 'all' or 'central' or 'none'
-    main(sys.argv[1], debug=False, dist_cutoff='com', pair_ions='all', dimer_calcs=False)
+    main(sys.argv[1], debug=False, dist_cutoff='com', pair_ions='all')
