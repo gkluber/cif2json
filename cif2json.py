@@ -9,7 +9,8 @@ import CifFile
 import numpy as np
 import qcelemental as qcel
 from itertools import permutations
-sys.path.append(path_to_qcp)
+sys.path.append("/Users/zoes/apps/qcp-python-app/qcp")
+sys.path.append("/g/data/k96/apps/qcp/qcp")
 from system import systemData
 
 
@@ -1028,8 +1029,8 @@ def make_sphere_from_whole_unit_cell(fragList_uc, atmList_uc, mx, my, mz, Nx, Ny
 ### JSON --------------------------------------------
 
 
-def json_mbe_template(frag_ids, frag_charges, symbols, geometry, nfrag_stop=None, basis="cc-pVDZ", auxbasis="cc-pVDZ-RIFIT", number_checkpoints=3):
-    """Template for json file."""
+def exess_mbe_template(frag_ids, frag_charges, symbols, geometry, method="RIMP2", nfrag_stop=None, basis="cc-pVDZ", auxbasis="cc-pVDZ-RIFIT", number_checkpoints=3):
+    """Json many body energy exess template."""
 
     # FRAGS
     mons = len(frag_charges)
@@ -1045,26 +1046,36 @@ def json_mbe_template(frag_ids, frag_charges, symbols, geometry, nfrag_stop=None
     dict_ = {
         "driver"    : "energy",
         "model"     : {
-            "method": "MBE-RIMP2",
-            "basis"     : basis,
-            "aux_basis" : auxbasis,
+            "method"        : method,
+            "basis"         : basis,
+            "aux_basis"     : auxbasis,
+            "fragmentation" : True
         },
         "keywords"  : {
             "scf"           : {
                 "niter"             : 100,
                 "ndiis"             : 10,
-                "dele"              : 1E-6,
-                "rmsd"              : 1E-6,
+                "dele"              : 1E-8,
+                "rmsd"              : 1E-8,
                 "debug"             : False,
             },
-            "mbe"       : {
-                "ngpus_per_group"   : 4,
+            "frag": {
+                "method"                : "MBE",
+                "ngpus_per_group"       : 4,
+                "lattice_energy_calc"   : True,
+                "reference_monomer"     : 0,
+                "dimer_cutoff"          : 1000,
+                "dimer_mp2_cutoff"      : 20,
+                "run_trimers"           : True,
+                "trimer_cutoff"         : 40,
+                "trimer_mp2_cutoff"     : 20,
+                "run_tetramers"         : True,
+                "tetramer_cutoff"       : 25,
+                "tetramer_mp2_cutoff"   : 10
             },
             "check_rst": {
                 "checkpoint": True,
                 "restart": False,
-                #"nfrag_check": int((m+ncheck)/ncheck),
-                #"nfrag_stop": m # total number of frags
                 "nfrag_check": min(ncheck, total_frags),
                 "nfrag_stop": min(nfrag_stop, total_frags)
             }
@@ -1080,6 +1091,9 @@ def json_mbe_template(frag_ids, frag_charges, symbols, geometry, nfrag_stop=None
             "geometry"      : geometry,
         },
     }
+
+    if number_checkpoints == 0:
+        del dict_["keywords"]["check_rst"]
 
     return dict_
 
@@ -1103,7 +1117,7 @@ def make_json_from_frag_ids(frag_indexs, fragList, atmList, nfrag_stop=None, bas
             geometry.extend([atmList[id]['x'], atmList[id]['y'], atmList[id]['z']])
             xyz_lines.append(f"{atmList[id]['sym']} {atmList[id]['x']} {atmList[id]['y']} {atmList[id]['z']}\n")
     # TO JSON
-    json_dict = json_mbe_template(frag_ids, frag_charges, symbols, geometry, nfrag_stop, basis, auxbasis, number_checkpoints)
+    json_dict = exess_mbe_template(frag_ids, frag_charges, symbols, geometry, nfrag_stop, basis, auxbasis, number_checkpoints)
     json_lines = format_json_input_file(json_dict)
 
     return json_lines, xyz_lines
