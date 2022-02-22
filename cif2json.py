@@ -532,6 +532,11 @@ def fract_min_max_from_cart(coords, cif_data):
 
 ### COORDS/FRAGS/ATOMS --------------------------------------------
 
+angstrom2bohr = 1.88973
+hartree2kjmol = 2625.4996
+osvdz2srs = 1.752
+osvtz2srs = 1.64
+
 
 def dist_threshold(atom_list, tolerance_value):
     rcov = {}
@@ -1065,12 +1070,13 @@ def exess_mbe_template(frag_ids, frag_charges, symbols, geometry, method="RIMP2"
                 "ngpus_per_group"       : 4,
                 "lattice_energy_calc"   : True,
                 "reference_monomer"     : ref_mon,
-                "dimer_cutoff"          : 1000,
-                "dimer_mp2_cutoff"      : 20,
-                "trimer_cutoff"         : 40,
-                "trimer_mp2_cutoff"     : 20,
-                "tetramer_cutoff"       : 25,
-                "tetramer_mp2_cutoff"   : 10
+                "reference_monomer"     : ref_mon,
+                "dimer_cutoff"          : 1000*angstrom2bohr,
+                "dimer_mp2_cutoff"      : 20*angstrom2bohr,
+                "trimer_cutoff"         : 40*angstrom2bohr,
+                "trimer_mp2_cutoff"     : 20*angstrom2bohr,
+                "tetramer_cutoff"       : 25*angstrom2bohr,
+                "tetramer_mp2_cutoff"   : 10*angstrom2bohr
             },
             "check_rst": {
                 "checkpoint": True,
