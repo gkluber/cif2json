@@ -1,5 +1,8 @@
 #
 cp-gadi.sh
+*log
+*json
+*xyz
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
