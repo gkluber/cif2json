@@ -1070,7 +1070,6 @@ def exess_mbe_template(frag_ids, frag_charges, symbols, geometry, method="RIMP2"
                 "ngpus_per_group"       : 4,
                 "lattice_energy_calc"   : True,
                 "reference_monomer"     : ref_mon,
-                "reference_monomer"     : ref_mon,
                 "dimer_cutoff"          : 1000*angstrom2bohr,
                 "dimer_mp2_cutoff"      : 20*angstrom2bohr,
                 "trimer_cutoff"         : 40*angstrom2bohr,
@@ -1256,37 +1255,6 @@ def write_file(filename, lines):
     with open(filename, 'w') as w:
         for line in lines:
             w.write(line + '\n')
-
-
-def write_job_dimers(filename, inputfile_list):
-    '''Write job with for list input files.'''
-
-    lines = [
-        "#!/bin/bash",
-        "#PBS -l walltime=05:00:00",
-        "#PBS -l ncpus=48",
-        "#PBS -l ngpus=4",
-        "#PBS -l mem=384GB",
-        "#PBS -l jobfs=100GB",
-        "#PBS -q gpuvolta",
-        "#PBS -P kv03",
-        "#PBS -l storage=gdata/k96+scratch/k96",
-        "#PBS -l wd",
-        "",
-        "# PATH TO EXESS",
-        "path_exe=/g/data/k96/apps/EXESS-dev",
-        "",
-        "# LOAD MODULES",
-        "source ~/exess/my_modules.sh",
-        "",
-        "# RUN",
-        "cd $path_exe",
-        ""
-    ]
-    for inputfile in inputfile_list:
-        outputfile = inputfile.replace('.json', '.log')
-        lines.append(f"./run.sh {inputfile} 6 &> $PBS_O_WORKDIR/{outputfile}")
-    write_file(filename, lines)
 
 
 ### MAIN --------------------------------------------
