@@ -1039,14 +1039,15 @@ def exess_mbe_template(frag_ids, frag_charges, symbols, geometry, method="RIMP2"
 
     # FRAGS
     mons = len(frag_charges)
-    total_frags = int(mons+mons*(mons-1)/2)
+    # WARNING: this is not the correct number of nfrags if the trimers and tetramers have cutoffs
+    total_frags = int(mons + mons-1 + (mons-1)*(mons-2)/2 + (mons-1)*(mons-2)*(mons-3)/6)
 
     if not nfrag_stop:
         nfrag_stop = total_frags
 
     # CHECKPOINTING
     ncheck = number_checkpoints + 1
-    ncheck = int((mons+ncheck)/ncheck)
+    ncheck = int((nfrag_stop+ncheck)/ncheck)
 
     dict_ = {
         "driver"    : "energy",
@@ -1102,7 +1103,7 @@ def exess_mbe_template(frag_ids, frag_charges, symbols, geometry, method="RIMP2"
     return dict_
 
 
-def make_json_from_frag_ids(frag_indexs, fragList, atmList, nfrag_stop=None, basis="cc-pVDZ", auxbasis="cc-pVDZ-RIFIT", number_checkpoints=3, ref_mon=0):
+def make_json_from_frag_ids(frag_indexs, fragList, atmList, nfrag_stop=None, basis="cc-pVDZ", auxbasis="cc-pVDZ-RIFIT", number_checkpoints=1, ref_mon=0):
 
     symbols      = []
     frag_ids     = []
@@ -1121,7 +1122,7 @@ def make_json_from_frag_ids(frag_indexs, fragList, atmList, nfrag_stop=None, bas
             geometry.extend([atmList[id]['x'], atmList[id]['y'], atmList[id]['z']])
             xyz_lines.append(f"{atmList[id]['sym']} {atmList[id]['x']} {atmList[id]['y']} {atmList[id]['z']}\n")
     # TO JSON
-    json_dict = exess_mbe_template(frag_ids, frag_charges, symbols, geometry, nfrag_stop, basis, auxbasis, number_checkpoints, ref_mon=ref_mon)
+    json_dict = exess_mbe_template(frag_ids, frag_charges, symbols, geometry, "RIMP2", nfrag_stop, basis, auxbasis, number_checkpoints, ref_mon=ref_mon)
     json_lines = format_json_input_file(json_dict)
 
     return json_lines, xyz_lines
@@ -1330,7 +1331,8 @@ def main(inputfile, debug=False, dist_cutoff='smallest', pair_ions="all"):
         write_central_frag(fragList_uc, atmList_uc, center_frag_id, mx, my, mz)
 
     # Create overall json
-    json_lines, xyz_lines = make_json_from_frag_ids(list(range(len(fragList))), fragList, atmList, ref_mon=center_frag_id)
+    nfrag_stop = 500
+    json_lines, xyz_lines = make_json_from_frag_ids(list(range(len(fragList))), fragList, atmList, ref_mon=center_frag_id, nfrag_stop=nfrag_stop)
     write_file("sphere.xyz", xyz_lines)
     write_file("sphere.json", json_lines)
 
