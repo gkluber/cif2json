@@ -1,4 +1,4 @@
-#!/bin/python3
+#!/usr/bin/env python3
 import os
 import sys
 import math
@@ -522,11 +522,11 @@ def fract_min_max_from_cart(coords, cif_data):
 
     # SHOULD BE JUST UNDER 3
     if not 2.8 < maxu - minu < 3:
-        sys.exit("maxu-minu not as expected. exiting ...")
+        print("WARNING: maxu-minu not as expected", maxu, minu)
     elif not 2.8 < maxv - minv < 3:
-        sys.exit("maxv-minv not as expected. exiting ...")
+        print("WARNING: maxv-minv not as expected", maxv, minv)
     elif not 2.8 < maxw - minw < 3:
-        sys.exit("maxw-minw not as expected. exiting ...")
+        print("WARNING: maxw-minw not as expected", maxw, minw)
     return minu, maxu, minv, maxv, minw, maxw
 
 
@@ -1214,7 +1214,7 @@ def write_xyz(output_fname, atom_list):
         of.write("\n\n")
 
         for atom in atom_list:
-            of.write("{sym:<5} {x:>15.10f} {y:>15.10f} {z:>15.10f}\n".format(sym = atom[0], x = atom[1], y = atom[2], z = atom[3]))
+            of.write("{sym:<5} {x:>15.10f} {y:>15.10f} {z:>15.10f}\n".format(sym=atom[0], x=atom[1], y=atom[2], z=atom[3]))
 
 
 def write_xyz_atmList(filename, atmList):
@@ -1222,7 +1222,7 @@ def write_xyz_atmList(filename, atmList):
 
     lines = []
     for atm in atmList:
-        lines.append(f"{atm['sym']} {atm['x']} {atm['y']} {atm['z']}\n")
+        lines.append(f"{atm['sym']} {atm['x']} {atm['y']} {atm['z']}")
     write_xyz_zoe(filename, lines)
 
 
@@ -1231,7 +1231,8 @@ def write_xyz_zoe(filename, lines):
 
     with open(filename, 'w') as w:
         w.write(f"{len(lines)}\n\n")
-        w.writelines(lines)
+        for line in lines:
+            w.write(line+"\n")
 
 
 def write_central_frag(fragList, atmList, center_ip_id, mx, my, mz):
@@ -1241,11 +1242,11 @@ def write_central_frag(fragList, atmList, center_ip_id, mx, my, mz):
 
     for val, atm in enumerate(atmList):
         # WRITE
-        lines.append(f"Cl {mx} {my} {mz}\n")
         if val in fragList[center_ip_id]['ids']:
-            lines.append(f"N {atm['x']} {atm['y']} {atm['z']}\n")
+            lines.append(f"N {atm['x']} {atm['y']} {atm['z']}")
         else:
-            lines.append(f"H {atm['x']} {atm['y']} {atm['z']}\n")
+            lines.append(f"H {atm['x']} {atm['y']} {atm['z']}")
+    lines.append(f"Cl {mx} {my} {mz}")
 
     write_xyz_zoe("central.xyz", lines)
 
@@ -1328,7 +1329,7 @@ def main(inputfile, debug=False, dist_cutoff='smallest', pair_ions="all"):
     atmList, fragList = make_sphere_from_whole_unit_cell(fragList_uc, atmList_uc, mx, my, mz, Nx, Ny, Nz, cif_data,
                                                          r_thres, dist_cutoff)
     if debug:
-        write_central_frag(fragList_uc, atmList_uc, center_frag_id, mx, my, mz)
+        write_central_frag(fragList, atmList, center_frag_id, mx, my, mz)
 
     # Create overall json
     nfrag_stop = 500
@@ -1340,4 +1341,4 @@ def main(inputfile, debug=False, dist_cutoff='smallest', pair_ions="all"):
 if __name__ == "__main__":
     # dist_cutoff: 'smallest' or 'com'
     # pair_ions: 'all' or 'central' or 'none'
-    main(sys.argv[1], debug=False, dist_cutoff='com', pair_ions='all')
+    main(sys.argv[1], debug=True, dist_cutoff='com', pair_ions='all')
