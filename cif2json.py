@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import os
+import glob
 import sys
 import math
 import json
@@ -36,15 +36,6 @@ class Timer:
 ### CRYSTAL STRUCTURE --------------------------------------------
 
 
-def read_input(inputfile):
-    with open(inputfile, "r") as f:
-        inp = f.read().splitlines()
-        inp = [i for i in inp if i[0:2] != "//"]
-        inp_dict = {i.split(":")[0].strip() : i.split(":")[1].strip() for i in inp}
-
-    return(inp_dict)
-
-
 def find_cif(inp_dict):
     try:
         cif_file = inp_dict["Cif"]
@@ -54,83 +45,15 @@ def find_cif(inp_dict):
     return(cif_file)
 
 
-def check_given_thresholds(inp_dict):
-    try:
-        given_r = inp_dict["Rgiven"]
-    except KeyError:
-        print("ERROR: cannot find 'Rgiven' in the input file.")
+def cell_lengths(r, cif_data):
 
-    if given_r == "y" or given_r == "Y": return(True)
-    elif given_r == "n" or given_r == "N": return(False)
-    else:
-        print("\n ERROR: You should answer with Y/y or N/n. \n")
-        sys.exit()
+    print("Radius: {} A".format(r))
 
+    Nx = math.ceil(r/cif_data["_cell_length_a"])+1
+    Ny = math.ceil(r/cif_data["_cell_length_b"])+1
+    Nz = math.ceil(r/cif_data["_cell_length_c"])+1
 
-def read_threshold_values(inp_dict, cif_data):
-
-    try:
-        r_thres = float(inp_dict["Rsphere"])
-    except KeyError:
-        print("ERROR: cannot find 'Rsphere' in the input file.")
-
-    cell_vol = cif_data["_cell_volume"]
-    cell_length = cell_vol**(1./3.)
-
-    if cell_length > r_thres:
-        print("WARNING: The radius value for the crystalline sphere is too small. It should be at least {}.".format(round(cell_length*3, 1)))
-
-    try:
-        r_dim_thres = float(inp_dict["Rdim"])
-    except KeyError:
-        print("ERROR: cannot fine 'Rdim' in the input file.")
-
-    try:
-        r_trim_thres = float(inp_dict["Rtrim"])
-    except KeyError:
-        print("ERROR: cannot find 'Rtrim' in the input file.")
-
-    # Nx = math.ceil(r_thres/cif_data["_cell_length_a"] + 1) * 2
-    # Ny = math.ceil(r_thres/cif_data["_cell_length_b"] + 1) * 2
-    # Nz = math.ceil(r_thres/cif_data["_cell_length_c"] + 1) * 2
-    Nx = math.ceil(r_thres/cif_data["_cell_length_a"])+1
-    Ny = math.ceil(r_thres/cif_data["_cell_length_b"])+1
-    Nz = math.ceil(r_thres/cif_data["_cell_length_c"])+1
-
-    # print("\n*******************************************************")
-    # print("SUMMARY OF INPUT VALUES\n")
-    # print("The radius of the crystalline sphere:  {}  Angstrom".format(r_thres))
-    # print("The threshold for dimers:              {}  Angstrom".format(r_dim_thres))
-    # print("The threshold for trimers:             {}  Angstrom".format(r_trim_thres))
-    # print("The size of supercell:                 {} x {} x {}".format(Nx, Ny, Nz))
-    # print("********************************************************\n")
-
-    return(r_thres, r_dim_thres, r_trim_thres, Nx, Ny, Nz)
-
-
-def calculate_threshold_values(cif_data):
-
-    cell_vol = cif_data["_cell_volume"]
-    cell_length = cell_vol**(1./3.)
-
-    r_thres = round(cell_length*2, 1)   # R = a*3
-    r_dim_thres = round(r_thres/2.0, 1)
-    r_trim_thres = round(r_thres/3.0 + 1, 1)
-
-    # a - Nx, b - Ny, c - Nz
-    Nx = math.ceil(r_thres/cif_data["_cell_length_a"] + 1) * 2
-    Ny = math.ceil(r_thres/cif_data["_cell_length_b"] + 1) * 2
-    Nz = math.ceil(r_thres/cif_data["_cell_length_c"] + 1) * 2
-
-    # print("\n*******************************************************")
-    # print("SUMMARY OF INPUT VALUES\n")
-    # print("The radius of the crystalline sphere:  {}  Angstrom".format(r_thres))
-    # print("The threshold for dimers:              {}  Angstrom".format(r_dim_thres))
-    # print("The threshold for trimers:             {}  Angstrom".format(r_trim_thres))
-    # print("The size of supercell:                 {} x {} x {}".format(Nx, Ny, Nz))
-    # print("********************************************************\n")
-
-    return(r_thres, r_dim_thres, r_trim_thres, Nx, Ny, Nz)
+    return Nx, Ny, Nz
 
 
 def factors_convert_fract2cartes(cif_data):
@@ -1257,13 +1180,12 @@ def write_file(filename, lines):
 ### MAIN --------------------------------------------
 
 
-def main(inputfile, debug=False, dist_cutoff='smallest', pair_ions="all"):
+def main(r, debug=False, dist_cutoff='smallest', pair_ions="all"):
 
     timer = Timer(to_print=debug)
 
     # Step 1: Read into the input file
-    inp_dict = read_input(inputfile)
-    cif_file = find_cif(inp_dict)
+    cif_file = glob.glob("*cif")[0]
     timer.stop("Step 1 - read input")
 
     # Step 2: Read into the CIF file and extract data from it into a dictionary
@@ -1271,11 +1193,7 @@ def main(inputfile, debug=False, dist_cutoff='smallest', pair_ions="all"):
     timer.stop("Step 2 - read cif")
 
     # Step 3: Get threshold values
-    given_r = check_given_thresholds(inp_dict)
-    if given_r:
-        r_thres, r_dim_thres, r_trim_thres, Nx, Ny, Nz = read_threshold_values(inp_dict, cif_data)
-    else:
-        r_thres, r_dim_thres, r_trim_thres, Nx, Ny, Nz = calculate_threshold_values(cif_data)
+    Nx, Ny, Nz = cell_lengths(r, cif_data)
     timer.stop("Step 3 - threshold values")
 
     # Step 4: Get the asymmetric unit from CIF dictionary
@@ -1322,7 +1240,7 @@ def main(inputfile, debug=False, dist_cutoff='smallest', pair_ions="all"):
 
     # Translate unit cell
     atmList, fragList = make_sphere_from_whole_unit_cell(fragList_uc, atmList_uc, mx, my, mz, Nx, Ny, Nz, cif_data,
-                                                         r_thres, dist_cutoff)
+                                                         r, dist_cutoff)
     if debug:
         write_central_frag(fragList, atmList, center_frag_id, mx, my, mz)
 
@@ -1336,4 +1254,4 @@ def main(inputfile, debug=False, dist_cutoff='smallest', pair_ions="all"):
 if __name__ == "__main__":
     # dist_cutoff: 'smallest' or 'centroid'
     # pair_ions: 'all' or 'central' or 'none'
-    main(sys.argv[1], debug=True, dist_cutoff='centroid', pair_ions='all')
+    main(float(sys.argv[1]), debug=True, dist_cutoff='centroid', pair_ions='all')
