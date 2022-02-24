@@ -567,40 +567,35 @@ def distance(i, j):
     return dist
 
 
-def center_of_mass(mol_coord):
+def centroid(mol_coord):
     """
     mol_coord is a list of tuples. Each tuple holds an atomic coordinate.
     ('O', -0.8310492693341551, -8.864856732599998, 5.019346296047775)
-    xCM = Σmixi/M,  yCM = Σmiyi/M,  zCM = Σmizi/M
+    centoid
     """
 
-    total_mass = 0.0
-    x_com = 0.0
-    y_com = 0.0
-    z_com = 0.0
-
+    x, y, z, i = 0, 0, 0, 0
     for atom in mol_coord:
-        total_mass += qcel.periodictable.to_mass(atom[0]) # sum of the atomic mass
-        x_com += atom[1] * qcel.periodictable.to_mass(atom[0])
-        y_com += atom[2] * qcel.periodictable.to_mass(atom[0])
-        z_com += atom[3] * qcel.periodictable.to_mass(atom[0])
+        i += 1
+        x += atom[1]
+        y += atom[2]
+        z += atom[3]
+    x = x/i
+    y = y/i
+    z = z/i
 
-    x_com = x_com/total_mass
-    y_com = y_com/total_mass
-    z_com = z_com/total_mass
-
-    return (x_com, y_com, z_com)
+    return (x, y, z)
 
 
-def mol_com_in_central_unit_cell(fragments, coords, cif_data, minu, minv, minw, atoms_uc):
-    """Return list of atoms whose center of mass is in central unit cell."""
+def mol_centroid_in_central_unit_cell(fragments, coords, cif_data, minu, minv, minw, atoms_uc):
+    """Return list of atoms whose centroid is in central unit cell."""
 
     factors_fract2carte_dict = factors_convert_fract2cartes(cif_data)
 
     new_atoms = []
     for frag in fragments:
         atoms = [coords[i] for i in frag]
-        cx, cy, cz = center_of_mass(atoms)
+        cx, cy, cz = centroid(atoms)
         u, v, w = convert_carte2fract_atom(cx, cy, cz, factors_fract2carte_dict)
         if (minu+1 <= u < minu+2) and (minv+1 <= v < minv+2) and (minw+1 <= w < minw+2):
             new_atoms.extend(atoms)
@@ -617,26 +612,26 @@ def min_max(list_):
     return min(list_), max(list_)
 
 
-def add_center_of_mass_frags(fragList, atmList):
-    """Add center of mass to each fragment."""
+def add_centroid_frags(fragList, atmList):
+    """Add centroid to each fragment."""
 
     for frag in fragList:
         atoms = [atmList[i] for i in frag['ids']]
-        frag['comx'], frag['comy'], frag['comz'] = center_of_mass_atmList(atoms)
+        frag['cx'], frag['cy'], frag['cz'] = centroid_atmList(atoms)
 
     return fragList
 
 
-def center_of_mass_atmList(atmList):
-    """Get center of mass for list of atoms."""
+def centroid_atmList(atmList):
+    """Get centroid for list of atoms."""
 
-    m, x, y, z = 0, 0, 0, 0
+    i, x, y, z = 0, 0, 0, 0
     for atm in atmList:
-        x += atm["x"] * atm['mas']
-        y += atm["y"] * atm['mas']
-        z += atm["z"] * atm['mas']
-        m += atm['mas']
-    return x/m, y/m, z/m
+        x += atm["x"]
+        y += atm["y"]
+        z += atm["z"]
+        i += 1
+    return x/i, y/i, z/i
 
 
 def coords_midpoint(atom_list):
@@ -672,7 +667,7 @@ def add_two_frags_together(fragList, atm_list, frag1_id, frag2_id):
         'name': fragList[new_id]['name'],
     }
 
-    new_frag = add_center_of_mass_frags([new_frag], atm_list)
+    new_frag = add_centroid_frags([new_frag], atm_list)
 
     new_fragList.extend(new_frag) # add new frag
 
@@ -705,8 +700,8 @@ def combination_smallest_distance(fragList, combinations):
         for cat, an in comb:
 
             tot_dist += distance(
-                [fragList[cat]['comx'], fragList[cat]['comy'], fragList[cat]['comz']],
-                [fragList[an]['comx'], fragList[an]['comy'], fragList[an]['comz']]
+                [fragList[cat]['cx'], fragList[cat]['cy'], fragList[cat]['cz']],
+                [fragList[an]['cx'], fragList[an]['cy'], fragList[an]['cz']]
             )
 
         if tot_dist < min_dist:
@@ -795,8 +790,8 @@ def pair_ions_by_type(fragList_uc, atmList_uc, mx, my, mz, pair_ions):
     # Pair all ions
     if pair_ions == "all":
 
-        # Add center of mass
-        fragList_uc = add_center_of_mass_frags(fragList_uc, atmList_uc)
+        # Add centroid
+        fragList_uc = add_centroid_frags(fragList_uc, atmList_uc)
 
         # Pair molecules by lowest total pairing distance
         fragList_uc = pair_ions_lowest_dist(fragList_uc, atmList_uc)
@@ -1007,12 +1002,12 @@ def make_sphere_from_whole_unit_cell(fragList_uc, atmList_uc, mx, my, mz, Nx, Ny
                         'name': f'frag{n_frags}',
                     }
 
-                    # center of mass
-                    comx, comy, comz = center_of_mass_atmList(new_atoms)
+                    # centroid
+                    cx, cy, cz = centroid_atmList(new_atoms)
 
                     # if in sphere
-                    if dist_cutoff == 'com':
-                        dist = distance([mx, my, mz], [comx, comy, comz])
+                    if dist_cutoff == 'centroid':
+                        dist = distance([mx, my, mz], [cx, cy, cz])
 
                     elif dist_cutoff == 'smallest':
                         dist = closest_distance(mx, my, mz, new_atoms)
@@ -1236,7 +1231,7 @@ def write_xyz_zoe(filename, lines):
 
 
 def write_central_frag(fragList, atmList, center_ip_id, mx, my, mz):
-    """WRITE XYZS, COMS, MIDPOINT AND CENTRAL IP TO XYZ"""
+    """WRITE XYZS, MIDPOINT AND CENTRAL IP TO XYZ"""
 
     lines = []
 
@@ -1312,8 +1307,8 @@ def main(inputfile, debug=False, dist_cutoff='smallest', pair_ions="all"):
     if debug:
         print("Length of x, y, z in fractional coordinates", maxu-minu, maxv-minv, maxw-minw)
 
-    # Find molecules with center or mass in central cell and write to file
-    atoms_whole_uc = mol_com_in_central_unit_cell(fragments, atoms_333_c, cif_data, minu, minv, minw, atoms_uc)
+    # Find molecules with centroid in central cell and write to file
+    atoms_whole_uc = mol_centroid_in_central_unit_cell(fragments, atoms_333_c, cif_data, minu, minv, minw, atoms_uc)
     write_xyz("atoms_whole_uc.xyz", atoms_whole_uc)
 
     # Read in system data
@@ -1339,6 +1334,6 @@ def main(inputfile, debug=False, dist_cutoff='smallest', pair_ions="all"):
 
 
 if __name__ == "__main__":
-    # dist_cutoff: 'smallest' or 'com'
+    # dist_cutoff: 'smallest' or 'centroid'
     # pair_ions: 'all' or 'central' or 'none'
-    main(sys.argv[1], debug=True, dist_cutoff='com', pair_ions='all')
+    main(sys.argv[1], debug=True, dist_cutoff='centroid', pair_ions='all')
