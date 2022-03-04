@@ -1180,7 +1180,7 @@ def write_file(filename, lines):
 ### MAIN --------------------------------------------
 
 
-def main(r, debug=False, dist_cutoff='smallest', pair_ions="all"):
+def main(r=100, debug=False, dist_cutoff='smallest', pair_ions="all"):
 
     timer = Timer(to_print=debug)
 
@@ -1254,4 +1254,9 @@ def main(r, debug=False, dist_cutoff='smallest', pair_ions="all"):
 if __name__ == "__main__":
     # dist_cutoff: 'smallest' or 'centroid'
     # pair_ions: 'all' or 'central' or 'none'
-    main(float(sys.argv[1]), debug=True, dist_cutoff='centroid', pair_ions='all')
+    try:
+        r = float(sys.argv[1])
+    except:
+        r = 100
+    print("Sphere size:", r)
+    main(r, debug=True, dist_cutoff='centroid', pair_ions='all')
