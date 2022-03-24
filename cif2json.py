@@ -981,6 +981,7 @@ def exess_mbe_template(frag_ids, frag_charges, symbols, geometry, method="RIMP2"
                 "ndiis"             : 10,
                 "dele"              : 1E-8,
                 "rmsd"              : 1E-8,
+                "dynamic_threshold" : 10,
                 "debug"             : False,
             },
             "frag": {
@@ -989,11 +990,11 @@ def exess_mbe_template(frag_ids, frag_charges, symbols, geometry, method="RIMP2"
                 "ngpus_per_group"       : 4,
                 "lattice_energy_calc"   : True,
                 "reference_monomer"     : ref_mon,
-                "dimer_cutoff"          : 1000*angstrom2bohr,
-                "dimer_mp2_cutoff"      : 20*angstrom2bohr,
-                "trimer_cutoff"         : 40*angstrom2bohr,
+                "dimer_cutoff"          : 100*angstrom2bohr,
+                "dimer_mp2_cutoff"      : 25*angstrom2bohr,
+                "trimer_cutoff"         : 35*angstrom2bohr,
                 "trimer_mp2_cutoff"     : 20*angstrom2bohr,
-                "tetramer_cutoff"       : 25*angstrom2bohr,
+                "tetramer_cutoff"       : 20*angstrom2bohr,
                 "tetramer_mp2_cutoff"   : 10*angstrom2bohr
             },
             "check_rst": {
@@ -1217,7 +1218,7 @@ def main(r=100, debug=False, dist_cutoff='smallest', pair_ions="all"):
     timer.stop("Create 3x3x3")
 
     # Find fragments in 3x3x3
-    fragments  = pairing_atoms(atoms_333_c)
+    fragments = pairing_atoms(atoms_333_c)
     timer.stop("Fragment system")
 
     # Get min of coords
@@ -1234,13 +1235,16 @@ def main(r=100, debug=False, dist_cutoff='smallest', pair_ions="all"):
 
     # Get midpoint of xyz
     mx, my, mz = coords_midpoint(atmList_uc)
+    print("Midpoint:", mx, my, mz)
 
     # Pair ions
     fragList_uc, center_frag_id = pair_ions_by_type(fragList_uc, atmList_uc, mx, my, mz, pair_ions)
+    print("Central fragment ID:", center_frag_id)
 
     # Translate unit cell
     atmList, fragList = make_sphere_from_whole_unit_cell(fragList_uc, atmList_uc, mx, my, mz, Nx, Ny, Nz, cif_data,
                                                          r, dist_cutoff)
+
     if debug:
         write_central_frag(fragList, atmList, center_frag_id, mx, my, mz)
 
