@@ -521,6 +521,7 @@ def mol_centroid_in_central_unit_cell(fragments, coords, cif_data, minu, minv, m
         cx, cy, cz = centroid(atoms)
         u, v, w = convert_carte2fract_atom(cx, cy, cz, factors_fract2carte_dict)
         if (minu+1 <= u < minu+2) and (minv+1 <= v < minv+2) and (minw+1 <= w < minw+2):
+            print(u, v, w)
             new_atoms.extend(atoms)
 
     if len(new_atoms) != len(atoms_uc):
@@ -705,13 +706,13 @@ def central_frag_with_charge(frag_list, atmList, midpointx, midpointy, midpointz
     return min_ion
 
 
-def pair_ions_by_type(fragList_uc, atmList_uc, mx, my, mz, pair_ions):
+def pair_mols_by_type(fragList_uc, atmList_uc, mx, my, mz, pair_mols):
     """Pair ions by type and return new fragList and central fragment ID."""
 
     print(f"{len(fragList_uc)} molecules in whole unit cell")
 
     # Pair all ions
-    if pair_ions == "all":
+    if pair_mols == "all":
 
         # Add centroid
         fragList_uc = add_centroid_frags(fragList_uc, atmList_uc)
@@ -723,7 +724,7 @@ def pair_ions_by_type(fragList_uc, atmList_uc, mx, my, mz, pair_ions):
         center_frag_id = central_frag_with_charge(fragList_uc, atmList_uc, mx, my, mz, 0)
 
     # Only pair central ion pair
-    elif pair_ions == "central":
+    elif pair_mols == "central":
 
         # Find central anion and cations
         center_cat = central_frag_with_charge(fragList_uc, atmList_uc, mx, my, mz, 1)
@@ -731,7 +732,7 @@ def pair_ions_by_type(fragList_uc, atmList_uc, mx, my, mz, pair_ions):
         fragList_uc, center_frag_id = add_two_frags_together(fragList_uc, atmList_uc, center_cat, center_an)
 
     # Do not pair any ions
-    elif pair_ions == "none":
+    elif pair_mols == "none":
         center_frag_id = central_frag_with_charge(fragList_uc, atmList_uc, mx, my, mz, "any")
 
     print(f"{len(fragList_uc)} fragments in whole unit cell")
@@ -1039,7 +1040,7 @@ def make_json_from_frag_ids(frag_indexs, fragList, atmList, nfrag_stop=None, bas
             symbols.append(atmList[id]['sym'])
             frag_ids.append(num)
             geometry.extend([atmList[id]['x'], atmList[id]['y'], atmList[id]['z']])
-            xyz_lines.append(f"{atmList[id]['sym']} {atmList[id]['x']} {atmList[id]['y']} {atmList[id]['z']}\n")
+            xyz_lines.append(f"{atmList[id]['sym']} {atmList[id]['x']} {atmList[id]['y']} {atmList[id]['z']}")
     # TO JSON
     json_dict = exess_mbe_template(frag_ids, frag_charges, symbols, geometry, "RIMP2", nfrag_stop, basis, auxbasis, number_checkpoints, ref_mon=ref_mon)
     json_lines = format_json_input_file(json_dict)
@@ -1181,13 +1182,9 @@ def write_file(filename, lines):
 ### MAIN --------------------------------------------
 
 
-def main(r=100, debug=False, dist_cutoff='smallest', pair_ions="all"):
+def main(cif_file, r=100, debug=False, dist_cutoff='smallest', pair_mols="all"):
 
     timer = Timer(to_print=debug)
-
-    # Step 1: Read into the input file
-    cif_file = glob.glob("*cif")[0]
-    timer.stop("Step 1 - read input")
 
     # Step 2: Read into the CIF file and extract data from it into a dictionary
     cif_data = read_cif(cif_file)
@@ -1238,7 +1235,7 @@ def main(r=100, debug=False, dist_cutoff='smallest', pair_ions="all"):
     print("Midpoint:", mx, my, mz)
 
     # Pair ions
-    fragList_uc, center_frag_id = pair_ions_by_type(fragList_uc, atmList_uc, mx, my, mz, pair_ions)
+    fragList_uc, center_frag_id = pair_mols_by_type(fragList_uc, atmList_uc, mx, my, mz, pair_mols)
     print("Central fragment ID:", center_frag_id)
 
     # Translate unit cell
@@ -1251,7 +1248,7 @@ def main(r=100, debug=False, dist_cutoff='smallest', pair_ions="all"):
     # Create overall json
     nfrag_stop = 500
     json_lines, xyz_lines = make_json_from_frag_ids(list(range(len(fragList))), fragList, atmList, ref_mon=center_frag_id, nfrag_stop=nfrag_stop)
-    write_file("sphere.xyz", xyz_lines)
+    write_xyz_zoe("sphere.xyz", xyz_lines)
     write_file("sphere.json", json_lines)
 
 
@@ -1262,5 +1259,17 @@ if __name__ == "__main__":
         r = float(sys.argv[1])
     except:
         r = 100
+
+    try:
+        cif_file = sys.argv[2]
+    except:
+        cif_file = glob.glob("*cif")[0]
+
+    try:
+        pair_mols = sys.argv[3]
+    except:
+        pair_mols = 'all'
+
     print("Sphere size:", r)
-    main(r, debug=True, dist_cutoff='centroid', pair_ions='all')
+    print("Cif file:", cif_file)
+    main(cif_file, r, debug=True, dist_cutoff='centroid', pair_mols=pair_mols)
