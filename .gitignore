@@ -3,6 +3,7 @@ cp-gadi.sh
 *log
 *json
 *xyz
+*cif
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
