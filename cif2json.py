@@ -1005,6 +1005,12 @@ def exess_mbe_template(frag_ids, frag_charges, symbols, geometry, method="RIMP2"
                 "tetramer_cutoff"       : 20*angstrom2bohr,
                 "tetramer_mp2_cutoff"   : 10*angstrom2bohr
             },
+            "FMO": {
+                "fmo_type": "CPF",
+                "mulliken_approx": True,
+                "esp_cutoff": 100000,
+                "esp_maxit": 50
+            },
             "check_rst": {
                 "checkpoint": True,
                 "restart": False,
