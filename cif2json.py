@@ -112,7 +112,7 @@ def factors_convert_fract2cartes(cif_data):
     return({"ax": ax, "ay": 0, "az": 0, "bx": bx, "by": by, "bz": 0, "cx": cx, "cy": cy, "cz": cz})
 
 
-def convert_fract2carte_atom(u, v, w, factors_dict, print_=None):
+def convert_fract2carte_atom(u, v, w, factors_dict, print_=False):
     ax = factors_dict["ax"]
     bx = factors_dict["bx"]
     cx = factors_dict["cx"]
@@ -130,8 +130,7 @@ def convert_fract2carte_atom(u, v, w, factors_dict, print_=None):
         print("ax, bx, cx, by, cy, cz", ax, bx, cx, by, cy, cz)
         print('x, y, z', x, y, z)
 
-
-    return(x, y, z)
+    return x, y, z
 
 
 def convert_carte2fract_atom(x, y, z, factors_dict, print_=None):
@@ -525,7 +524,7 @@ def mol_centroid_in_central_unit_cell(fragments, coords, cif_data, minu, minv, m
             new_atoms.extend(atoms)
 
     if len(new_atoms) != len(atoms_uc):
-        sys.exit("Not the same number of atoms in the unit cell as whole atom unit cell. exiting ...")
+        sys.exit(f"Not the same number of atoms in the unit cell ({len(atoms_uc)}) as whole atom unit cell ({len(new_atoms)}). exiting ...")
 
     return new_atoms
 
@@ -892,10 +891,18 @@ def make_sphere_from_whole_unit_cell(fragList_uc, atmList_uc, mx, my, mz, Nx, Ny
     atmList  = copy.deepcopy(atmList_uc)
     n_frags = len(fragList)
     n_atoms = len(atmList)
+    # print(cif_data["_cell_length_a"], cif_data["_cell_length_b"], cif_data["_cell_length_c"])
+
+    # print(convert_fract2carte_atom(0, 0, 0, factors_convert_fract2cartes(cif_data)))
+    # print(convert_fract2carte_atom(1, 0, 0, factors_convert_fract2cartes(cif_data)))
+    # print(convert_fract2carte_atom(0, 1, 0, factors_convert_fract2cartes(cif_data)))
+    # print(convert_fract2carte_atom(0, 0, 1, factors_convert_fract2cartes(cif_data)))
+    # print(convert_fract2carte_atom(1, 1, 1, factors_convert_fract2cartes(cif_data)))
     for nx in range(-Nx, Nx):
         for ny in range(-Ny, Nx):
             for nz in range(-Nz, Nz):
                 if nx == 0 and ny == 0 and nz == 0: continue
+                x, y, z = convert_fract2carte_atom(nx, ny, nz, factors_convert_fract2cartes(cif_data))
                 # loop over frags
                 for frag in fragList_uc:
                     n_atoms_copy = n_atoms # reset number of atoms in case last frag was not added
@@ -906,9 +913,9 @@ def make_sphere_from_whole_unit_cell(fragList_uc, atmList_uc, mx, my, mz, Nx, Ny
                         new_atoms.append({
                             'id'  : n_atoms_copy,
                             'sym' : atmList_uc[id]['sym'],
-                            'x'   : atmList_uc[id]['x'] + nx*cif_data["_cell_length_a"],
-                            'y'   : atmList_uc[id]['y'] + ny*cif_data["_cell_length_b"],
-                            'z'   : atmList_uc[id]['z'] + nz*cif_data["_cell_length_c"],
+                            'x'   : atmList_uc[id]['x'] + x,
+                            'y'   : atmList_uc[id]['y'] + y,
+                            'z'   : atmList_uc[id]['z'] + z,
                             'nu'  : atmList_uc[id]['nu'],
                             'mas' : atmList_uc[id]['mas'],
                             'vdw' : atmList_uc[id]['vdw'],
@@ -1204,14 +1211,16 @@ def main(cif_file, r=100, debug=False, dist_cutoff='smallest', pair_mols="all"):
 
     # Create a 3x3x3 unit
     atoms_333_f = supercell(atoms_uc, 3, 3, 3)
-    atoms_333_c = convert_supercell_tocartes(atoms_333_f, cif_data, 3, 3, 3)
-    atoms_333_c = finalise_supercell(atoms_333_c)
+    atoms_333_m = convert_supercell_tocartes(atoms_333_f, cif_data, 3, 3, 3)
+    atoms_333_c = finalise_supercell(atoms_333_m)
     if debug:
+        # unit cell
         atoms_uc_m = convert_supercell_tocartes(atoms_uc, cif_data, 1, 1, 1)
         write_xyz("unit_cell.xyz", atoms_uc_m)
-        atoms_333_m = convert_supercell_tocartes(atoms_333_f, cif_data, 3, 3, 3)
+        # 3x3x3
         write_xyz("unit_333.xyz", atoms_333_m)
         write_xyz("unit_333_clean.xyz", atoms_333_c)
+
     timer.stop("Create 3x3x3")
 
     # Find fragments in 3x3x3
