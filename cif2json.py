@@ -46,13 +46,15 @@ def find_cif(inp_dict):
 
 
 def cell_lengths(r, cif_data):
+    """Number of boxes to consider in each axis where one box is one additional unit cell in that direction."""
 
     print("Radius: {} A".format(r))
-
-    Nx = math.ceil(r/cif_data["_cell_length_a"])+1
-    Ny = math.ceil(r/cif_data["_cell_length_b"])+1
-    Nz = math.ceil(r/cif_data["_cell_length_c"])+1
-
+    # Nx = math.ceil(r/cif_data["_cell_length_a"])+1
+    # Ny = math.ceil(r/cif_data["_cell_length_b"])+1
+    # Nz = math.ceil(r/cif_data["_cell_length_c"])+1
+    l_max = max(cif_data["_cell_length_a"], cif_data["_cell_length_b"], cif_data["_cell_length_c"])
+    n_max = math.ceil(r/l_max)+2
+    Nx, Ny, Nz = n_max, n_max, n_max
     return Nx, Ny, Nz
 
 
@@ -1007,7 +1009,7 @@ def exess_mbe_template(frag_ids, frag_charges, symbols, geometry, method="RIMP2"
             },
             "FMO": {
                 "fmo_type": "CPF",
-                "mulliken_approx": True,
+                "mulliken_approx": False,
                 "esp_cutoff": 100000,
                 "esp_maxit": 50
             },
