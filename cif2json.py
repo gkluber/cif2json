@@ -962,7 +962,8 @@ def make_sphere_from_whole_unit_cell(fragList_uc, atmList_uc, mx, my, mz, Nx, Ny
 ### JSON --------------------------------------------
 
 
-def exess_mbe_template(frag_ids, frag_charges, symbols, geometry, method="RIMP2", nfrag_stop=None, basis="cc-pVDZ", auxbasis="cc-pVDZ-RIFIT", number_checkpoints=3, ref_mon=0):
+def exess_mbe_template(frag_ids, frag_charges, symbols, geometry, method="RIMP2", nfrag_stop=None, basis="cc-pVDZ",
+                       auxbasis="cc-pVDZ-RIFIT", number_checkpoints=3, ref_mon=0, level=4):
     """Json many body energy exess template."""
 
     # FRAGS
@@ -996,7 +997,7 @@ def exess_mbe_template(frag_ids, frag_charges, symbols, geometry, method="RIMP2"
             },
             "frag": {
                 "method"                : "MBE",
-                "level"                 : 4,
+                "level"                 : level,
                 "ngpus_per_group"       : 4,
                 "lattice_energy_calc"   : True,
                 "reference_monomer"     : ref_mon,
@@ -1038,7 +1039,8 @@ def exess_mbe_template(frag_ids, frag_charges, symbols, geometry, method="RIMP2"
     return dict_
 
 
-def make_json_from_frag_ids(frag_indexs, fragList, atmList, nfrag_stop=None, basis="cc-pVDZ", auxbasis="cc-pVDZ-RIFIT", number_checkpoints=1, ref_mon=0):
+def make_json_from_frag_ids(frag_indexs, fragList, atmList, nfrag_stop=None, basis="cc-pVDZ", auxbasis="cc-pVDZ-RIFIT",
+                            number_checkpoints=1, ref_mon=None, level=4, method="RIMP2"):
 
     symbols      = []
     frag_ids     = []
@@ -1057,7 +1059,8 @@ def make_json_from_frag_ids(frag_indexs, fragList, atmList, nfrag_stop=None, bas
             geometry.extend([atmList[id]['x'], atmList[id]['y'], atmList[id]['z']])
             xyz_lines.append(f"{atmList[id]['sym']} {atmList[id]['x']} {atmList[id]['y']} {atmList[id]['z']}")
     # TO JSON
-    json_dict = exess_mbe_template(frag_ids, frag_charges, symbols, geometry, "RIMP2", nfrag_stop, basis, auxbasis, number_checkpoints, ref_mon=ref_mon)
+    json_dict = exess_mbe_template(frag_ids, frag_charges, symbols, geometry, method, nfrag_stop, basis, auxbasis,
+                                   number_checkpoints, ref_mon=ref_mon, level=level)
     json_lines = format_json_input_file(json_dict)
 
     return json_lines, xyz_lines
@@ -1124,6 +1127,30 @@ def format_json_input_file(dict_):
             newlines.append(line)
 
     return newlines
+
+
+def writeCentralMBE(center_frag_id, fragList, fragList_init, atmList):
+    """Write central frag as dimer MBE."""
+
+    # get initial frag ids which contain atoms of central ip
+    frag_ids_in_central = []
+    for frg in fragList:
+        if center_frag_id == frg["grp"]:
+            # find atoms of central frag
+            for atm in frg['ids']:
+                for val, frag_init in enumerate(fragList_init):
+                    # get original frags containing atoms of combined central frag
+                    if atm in frag_init['ids']:
+                        frag_ids_in_central.append(val)
+
+    frag_ids_in_central = list(set(frag_ids_in_central))
+
+    # mbe of central
+    json_lines, lines = make_json_from_frag_ids(frag_ids_in_central, fragList_init, atmList, level=2,
+                                                       ref_mon=0, number_checkpoints=0)
+
+    # WRITE FILES
+    write_file('sphere_central.json', json_lines)
 
 
 ### WRITE TO FILE --------------------------------------------
@@ -1244,16 +1271,28 @@ def main(cif_file, r=100, debug=False, dist_cutoff='smallest', pair_mols="all"):
     atoms_whole_uc = mol_centroid_in_central_unit_cell(fragments, atoms_333_c, cif_data, minu, minv, minw, atoms_uc)
     write_xyz("atoms_whole_uc.xyz", atoms_whole_uc)
 
-    # Read in system data
-    fragList_uc, atmList_uc, totChrg, totMult = systemData("", "atoms_whole_uc.xyz", True)
+    # read in system data
+    fragList_uc_init, atmList_uc, totChrg, totMult = systemData("", "atoms_whole_uc.xyz", True)
 
     # Get midpoint of xyz
     mx, my, mz = coords_midpoint(atmList_uc)
     print("Midpoint:", mx, my, mz)
 
     # Pair ions
-    fragList_uc, center_frag_id = pair_mols_by_type(fragList_uc, atmList_uc, mx, my, mz, pair_mols)
+    fragList_uc, center_frag_id = pair_mols_by_type(fragList_uc_init, atmList_uc, mx, my, mz, pair_mols)
     print("Central fragment ID:", center_frag_id)
+
+    # make dimer calc of central ion pair if paired
+    if pair_mols in ["all", "central"]:
+        writeCentralMBE(center_frag_id, fragList_uc, fragList_uc_init, atmList_uc)
+
+        atm_list_central = []
+        for frg in fragList_uc:
+            if center_frag_id == frg["grp"]:
+                for atm in frg['ids']:
+                    atm_list_central.append(atmList_uc[atm])
+                print(atm_list_central)
+
 
     # Translate unit cell
     atmList, fragList = make_sphere_from_whole_unit_cell(fragList_uc, atmList_uc, mx, my, mz, Nx, Ny, Nz, cif_data,
@@ -1264,7 +1303,8 @@ def main(cif_file, r=100, debug=False, dist_cutoff='smallest', pair_mols="all"):
 
     # Create overall json
     nfrag_stop = 500
-    json_lines, xyz_lines = make_json_from_frag_ids(list(range(len(fragList))), fragList, atmList, ref_mon=center_frag_id, nfrag_stop=nfrag_stop)
+    json_lines, xyz_lines = make_json_from_frag_ids(list(range(len(fragList))), fragList, atmList,
+                                                    ref_mon=center_frag_id, nfrag_stop=nfrag_stop)
     write_xyz_zoe("sphere.xyz", xyz_lines)
     write_file("sphere.json", json_lines)
 
