@@ -522,7 +522,6 @@ def mol_centroid_in_central_unit_cell(fragments, coords, cif_data, minu, minv, m
         cx, cy, cz = centroid(atoms)
         u, v, w = convert_carte2fract_atom(cx, cy, cz, factors_fract2carte_dict)
         if (minu+1 <= u < minu+2) and (minv+1 <= v < minv+2) and (minw+1 <= w < minw+2):
-            print(u, v, w)
             new_atoms.extend(atoms)
 
     if len(new_atoms) != len(atoms_uc):
@@ -1285,14 +1284,6 @@ def main(cif_file, r=100, debug=False, dist_cutoff='smallest', pair_mols="all"):
     # make dimer calc of central ion pair if paired
     if pair_mols in ["all", "central"]:
         writeCentralMBE(center_frag_id, fragList_uc, fragList_uc_init, atmList_uc)
-
-        atm_list_central = []
-        for frg in fragList_uc:
-            if center_frag_id == frg["grp"]:
-                for atm in frg['ids']:
-                    atm_list_central.append(atmList_uc[atm])
-                print(atm_list_central)
-
 
     # Translate unit cell
     atmList, fragList = make_sphere_from_whole_unit_cell(fragList_uc, atmList_uc, mx, my, mz, Nx, Ny, Nz, cif_data,
