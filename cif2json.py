@@ -5,6 +5,7 @@ import math
 import json
 import copy
 import time
+import itertools
 import CifFile
 import numpy as np
 import qcelemental as qcel
@@ -521,6 +522,9 @@ def mol_centroid_in_central_unit_cell(fragments, coords, cif_data, minu, minv, m
         atoms = [coords[i] for i in frag]
         cx, cy, cz = centroid(atoms)
         u, v, w = convert_carte2fract_atom(cx, cy, cz, factors_fract2carte_dict)
+        minu = round(minu, 3)
+        minv = round(minv, 3)
+        minw = round(minw, 3)
         if (minu+1 <= u < minu+2) and (minv+1 <= v < minv+2) and (minw+1 <= w < minw+2):
             new_atoms.extend(atoms)
 
@@ -639,17 +643,79 @@ def pair_ions_lowest_dist(fragList, atmList):
     """Get pairing of molecules that has lowest total distance."""
 
     # cation/anion lists
-    cations, anions = [], []
+    cations_list, anions_list = [], []
     for i in range(len(fragList)):
         if fragList[i]['chrg'] == 1:
-            cations.append(i)
+            cations_list.append(i)
         elif fragList[i]['chrg'] == -1:
-            anions.append(i)
+            anions_list.append(i)
         else:
             sys.exit("Only written for singly charged species. exiting ...")
 
-    anions = list(permutations(anions)) # perms of anions
-    cations = [cations] * len(anions)   # make list of lists of cations
+    cutoff = 8
+    anion_pairs = []
+    for i in cations_list:
+        cat = fragList[i]
+        anion_pairs.append([])
+        for j in anions_list:
+            an = fragList[j]
+            d = distance([cat['cx'], cat['cy'], cat['cz']], [an['cx'], an['cy'], an['cz']])
+            if d < cutoff:
+                anion_pairs[-1].append(j)
+
+    # if anion only in one list
+    for an in anions_list:
+        i = 0
+        for an_list in anion_pairs:
+            if an in an_list:
+                i += 1
+        if i == 1:
+            for j in range(len(anion_pairs)):
+                if an in anion_pairs[j]:
+                    anion_pairs[j] = [an]
+
+    # if list only has one anion
+    for an_list in anion_pairs:
+        if len(an_list) == 1:
+            id = an_list[0]
+            for an_list2 in anion_pairs:
+                if id in an_list2 and an_list2 != [id]:
+                    an_list2.remove(id)
+
+    # if anion only in one list
+    for an in anions_list:
+        i = 0
+        for an_list in anion_pairs:
+            if an in an_list:
+                i += 1
+        if i == 1:
+            for j in range(len(anion_pairs)):
+                if an in anion_pairs[j]:
+                    anion_pairs[j] = [an]
+
+    # if list only has one anion
+    for an_list in anion_pairs:
+        if len(an_list) == 1:
+            id = an_list[0]
+            for an_list2 in anion_pairs:
+                if id in an_list2 and an_list2 != [id]:
+                    an_list2.remove(id)
+
+    # all combinations of one anion from each list
+    anion_combs_to_check = list(itertools.product(*anion_pairs))
+
+    # each anion in list only once
+    anions = []
+    for comb in anion_combs_to_check:
+        remove = False
+        for an in anions_list:
+            if comb.count(an) != 1:
+                remove = True
+                break
+        if not remove:
+            anions.append(comb)
+
+    cations = [cations_list] * len(anions_list)   # make list of lists of cations
 
     # make combinations
     combinations = []
@@ -1278,6 +1344,7 @@ def main(cif_file, r=100, debug=False, dist_cutoff='smallest', pair_mols="all"):
     print("Midpoint:", mx, my, mz)
 
     # Pair ions
+    # print(len(fragList_uc_init))
     fragList_uc, center_frag_id = pair_mols_by_type(fragList_uc_init, atmList_uc, mx, my, mz, pair_mols)
     print("Central fragment ID:", center_frag_id)
 
