@@ -2,6 +2,7 @@
 
 Make an exess input file (json) from a cif file. A sphere of molecules are created with a given distance from the central fragment. If ions, the molecules can be paired together into [cation+anion] neutral fragments. This has been adapted from code by Anh LP Nguyen.
 
+
 ## Dependences
 - qcelemental
 - numpy
@@ -10,18 +11,11 @@ Make an exess input file (json) from a cif file. A sphere of molecules are creat
 
 ## Usage
 
-`cif2json.py inputfile.inp`
+For a sphere of 100Å where the cif file is in the same directory:
+`cif2json.py 100`
 
-### Input file
-```
-// [C1mpyr][NTf2]
-Title        : c1mpyr ntf2
-Cif          : ../P11NTF2.cif
-Ionic        : Y
-Cation       : C 6 H 14 N 1
-Anion        : C 2 F 6 N 1 O 4 S 2
-Rgiven       : Y
-Rsphere      : 22.0
-Rdim         : 0.0
-Rtrim        : 0.0
-```
+or if no pairing of molecules in desired:
+
+`cif2json.py 100 file.cif none`
+
+Molecules are formed using QCP. To add molecules to QCP edit ~/myMolecules.qcp which will be created after first use.
