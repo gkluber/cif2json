@@ -109,8 +109,8 @@ def factors_convert_fract2cartes(cif_data):
     # Use the volume to check that we calculated the vectors correctly
     V = ax * by * cz
 
-    if abs(V - cif_data["_cell_volume"]) > 0.1:
-        print("WARNING: Volume calculated with the real vectors is not the same as the volume in CIF file.")
+    # if abs(V - cif_data["_cell_volume"]) > 0.1:
+    #     print("WARNING: Volume calculated with the real vectors is not the same as the volume in CIF file.")
 
     return({"ax": ax, "ay": 0, "az": 0, "bx": bx, "by": by, "bz": 0, "cx": cx, "cy": cy, "cz": cz})
 
@@ -528,8 +528,8 @@ def mol_centroid_in_central_unit_cell(fragments, coords, cif_data, minu, minv, m
         if (minu+1 <= u < minu+2) and (minv+1 <= v < minv+2) and (minw+1 <= w < minw+2):
             new_atoms.extend(atoms)
 
-    if len(new_atoms) != len(atoms_uc):
-        sys.exit(f"Not the same number of atoms in the unit cell ({len(atoms_uc)}) as whole atom unit cell ({len(new_atoms)}). exiting ...")
+    # if len(new_atoms) != len(atoms_uc):
+    #     sys.exit(f"Not the same number of atoms in the unit cell ({len(atoms_uc)}) as whole atom unit cell ({len(new_atoms)}). exiting ...")
 
     return new_atoms
 
