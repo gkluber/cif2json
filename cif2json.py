@@ -10,6 +10,7 @@ import CifFile
 import numpy as np
 import qcelemental as qcel
 from itertools import permutations
+
 sys.path.append("/Users/zoes/apps/qcp-python-app/qcp")
 sys.path.append("/g/data/k96/apps/qcp/qcp")
 from system import systemData
@@ -43,7 +44,7 @@ def find_cif(inp_dict):
     except KeyError:
         print("ERROR: cannot find 'Cif' in the input file.")
 
-    return(cif_file)
+    return (cif_file)
 
 
 def cell_lengths(r, cif_data):
@@ -54,7 +55,7 @@ def cell_lengths(r, cif_data):
     # Ny = math.ceil(r/cif_data["_cell_length_b"])+1
     # Nz = math.ceil(r/cif_data["_cell_length_c"])+1
     l_max = max(cif_data["_cell_length_a"], cif_data["_cell_length_b"], cif_data["_cell_length_c"])
-    n_max = math.ceil(r/l_max)+2
+    n_max = math.ceil(r / l_max) + 2
     Nx, Ny, Nz = n_max, n_max, n_max
     return Nx, Ny, Nz
 
@@ -103,8 +104,8 @@ def factors_convert_fract2cartes(cif_data):
     # bz = 0
 
     cx = Lc * cos_b
-    cy = Lc * (cos_a - cos_g*cos_b)/sin_g
-    cz = Lc * math.sqrt(1 - cos_a**2 - cos_b**2 - cos_g**2 + 2*cos_a*cos_b*cos_g)/sin_g
+    cy = Lc * (cos_a - cos_g * cos_b) / sin_g
+    cz = Lc * math.sqrt(1 - cos_a ** 2 - cos_b ** 2 - cos_g ** 2 + 2 * cos_a * cos_b * cos_g) / sin_g
 
     # Use the volume to check that we calculated the vectors correctly
     V = ax * by * cz
@@ -112,7 +113,7 @@ def factors_convert_fract2cartes(cif_data):
     # if abs(V - cif_data["_cell_volume"]) > 0.1:
     #     print("WARNING: Volume calculated with the real vectors is not the same as the volume in CIF file.")
 
-    return({"ax": ax, "ay": 0, "az": 0, "bx": bx, "by": by, "bz": 0, "cx": cx, "cy": cy, "cz": cz})
+    return ({"ax": ax, "ay": 0, "az": 0, "bx": bx, "by": by, "bz": 0, "cx": cx, "cy": cy, "cz": cz})
 
 
 def convert_fract2carte_atom(u, v, w, factors_dict, print_=False):
@@ -123,9 +124,9 @@ def convert_fract2carte_atom(u, v, w, factors_dict, print_=False):
     cy = factors_dict["cy"]
     cz = factors_dict["cz"]
 
-    x = ax*u + bx*v + cx*w
-    y = by*v + cy*w
-    z = cz*w
+    x = ax * u + bx * v + cx * w
+    y = by * v + cy * w
+    z = cz * w
 
     if print_:
         print('convert_fract2carte_atom')
@@ -144,9 +145,9 @@ def convert_carte2fract_atom(x, y, z, factors_dict, print_=None):
     cy = factors_dict["cy"]
     cz = factors_dict["cz"]
 
-    w = z/cz
+    w = z / cz
     v = (y - cy * w) / by
-    u = (x - bx*v - cx*w) / ax
+    u = (x - bx * v - cx * w) / ax
 
     if print_:
         print('convert_carte2fract_atom')
@@ -154,7 +155,7 @@ def convert_carte2fract_atom(x, y, z, factors_dict, print_=None):
         print("ax, bx, cx, by, cy, cz", ax, bx, cx, by, cy, cz)
         print("u, v, w", u, v, w)
 
-    return(u, v, w)
+    return (u, v, w)
 
 
 def read_cif(cif_name):
@@ -167,7 +168,6 @@ def read_cif(cif_name):
     cif_data = {}
 
     # Extract CIF data and remove the square brackets in the numbers
-
 
     cif_data["_chemical_name"] = cif_dblock["_chemical_name_systematic"]
     if cif_dblock["_chemical_name_systematic"] == "?":
@@ -206,7 +206,8 @@ def read_cif(cif_name):
         try:
             sym_op = cif_dblock["_space_group_symop_operation_xyz"]
         except KeyError:
-            print("\n ERROR: Cif file does not have an item: either \"_symmetry_equiv_pos_as_xyz\" or \"_space_group_symop_operation_xyz\".")
+            print(
+                "\n ERROR: Cif file does not have an item: either \"_symmetry_equiv_pos_as_xyz\" or \"_space_group_symop_operation_xyz\".")
             sys.exit()
 
     for xyz_op in sym_op:
@@ -228,11 +229,10 @@ def read_cif(cif_name):
     for w in cif_dblock["_atom_site_fract_z"]:
         cif_data["_atom_site_fract_z"].append(float(w.split("(")[0]))
 
-    return(cif_data)
+    return (cif_data)
 
 
 def asym_unit(cif_data):
-
     # Atom labels
     atom_labels = cif_data["_atom_site_type_symbol"]
     # Atom coordinates
@@ -244,9 +244,9 @@ def asym_unit(cif_data):
     asym_unit = [(atom_labels[i], atom_u[i], atom_v[i], atom_w[i]) for i in range(len(atom_labels))]
 
     # Move atoms into a unit cell
-    asym_unit = [(atom[0], atom[1]%1.0, atom[2]%1.0, atom[3]%1.0) for atom in asym_unit]
+    asym_unit = [(atom[0], atom[1] % 1.0, atom[2] % 1.0, atom[3] % 1.0) for atom in asym_unit]
 
-    return(asym_unit)
+    return (asym_unit)
 
 
 def unit_cell(atoms, cif_data):
@@ -292,7 +292,8 @@ def unit_cell(atoms, cif_data):
 
                     # Check that this is the same atom type.
                     if atom[0] != label:
-                        print("\nERROR: Invalid CIF file: atom of type %s overlaps with atom of type %s" % (atom[0], label))
+                        print("\nERROR: Invalid CIF file: atom of type %s overlaps with atom of type %s" % (
+                        atom[0], label))
 
             if (new_atom):
                 atoms.append((label, u, v, w))
@@ -302,7 +303,7 @@ def unit_cell(atoms, cif_data):
 
     atoms_uc = atoms
 
-    return(atoms_uc)
+    return (atoms_uc)
 
 
 def supercell(atoms_uc, Nx, Ny, Nz):
@@ -322,7 +323,7 @@ def supercell(atoms_uc, Nx, Ny, Nz):
                     ww = k + w
                     atoms_sc.append((label, uu, vv, ww))
 
-    return(atoms_sc)
+    return (atoms_sc)
 
 
 def convert_supercell_tocartes(atoms_sc, cif_data, Nx, Ny, Nz, print_=None):
@@ -370,7 +371,7 @@ def convert_supercell_tocartes(atoms_sc, cif_data, Nx, Ny, Nz, print_=None):
             print("label, xn, yn, zn", label, xn1, yn1, zn1)
             print("label, xn, yn, zn", label, xn2, yn2, zn2)
 
-    return(atoms_rsc)
+    return (atoms_rsc)
 
 
 def convert_tofracts(atoms_sc, cif_data):
@@ -382,7 +383,7 @@ def convert_tofracts(atoms_sc, cif_data):
         (xn, yn, zn) = convert_carte2fract_atom(xf, yf, zf, factors_fract2carte_dict)
         atoms_rsc.append((label, xn, yn, zn))
 
-    return(atoms_rsc)
+    return (atoms_rsc)
 
 
 def finalise_supercell(atoms_rsc):
@@ -395,9 +396,9 @@ def finalise_supercell(atoms_rsc):
     clean_sc, uniq_idx_1 = np.unique(atoms_rsc, return_index=True, axis=0)
 
     sc_coord = []
-    test_sc_coord = [] # testing if there are coordinates that are similar
+    test_sc_coord = []  # testing if there are coordinates that are similar
     sc_elem = []
-    #test_sc_elem = []
+    # test_sc_elem = []
 
     for atom in clean_sc:
         x = round(float(atom[1]), 2)
@@ -421,15 +422,16 @@ def finalise_supercell(atoms_rsc):
         fin_sc_elem.append(sc_elem[i])
 
     # Find the origin of the super cell
-    center_sc = (np.max(fin_sc_coord, axis=0) - np.min(fin_sc_coord, axis=0))/2
+    center_sc = (np.max(fin_sc_coord, axis=0) - np.min(fin_sc_coord, axis=0)) / 2
 
     # Translate the supercell to the origin
     fin_sc_coord -= center_sc
 
     # Glue the coordinate and elements together
-    sc_rcoord = [(fin_sc_elem[i], fin_sc_coord[i][0], fin_sc_coord[i][1], fin_sc_coord[i][2]) for i in range(len(fin_sc_elem))]
+    sc_rcoord = [(fin_sc_elem[i], fin_sc_coord[i][0], fin_sc_coord[i][1], fin_sc_coord[i][2]) for i in
+                 range(len(fin_sc_elem))]
 
-    return(sc_rcoord)
+    return (sc_rcoord)
 
 
 def fract_min_max_from_cart(coords, cif_data):
@@ -469,9 +471,10 @@ def dist_threshold(atom_list, tolerance_value):
     for i in atom_list:
         rcov[i] = {}
         for j in atom_list:
-            r = (qcel.covalentradii.get(i, units="angstrom") + qcel.covalentradii.get(j, units="angstrom")) * tolerance_value
+            r = (qcel.covalentradii.get(i, units="angstrom") + qcel.covalentradii.get(j,
+                                                                                      units="angstrom")) * tolerance_value
 
-            #r = round((covalent_radius_dict[atom_i] + covalent_radius_dict[atom_j]) * tolerance_value, 5)
+            # r = round((covalent_radius_dict[atom_i] + covalent_radius_dict[atom_j]) * tolerance_value, 5)
             rcov[i][j] = r
 
     return rcov
@@ -488,7 +491,7 @@ def closest_distance(x, y, z, atmList):
 
 
 def distance(i, j):
-    dist = math.sqrt((i[0] - j[0])**2 + (i[1] - j[1])**2 + (i[2] - j[2])**2)
+    dist = math.sqrt((i[0] - j[0]) ** 2 + (i[1] - j[1]) ** 2 + (i[2] - j[2]) ** 2)
     return dist
 
 
@@ -505,9 +508,9 @@ def centroid(mol_coord):
         x += atom[1]
         y += atom[2]
         z += atom[3]
-    x = x/i
-    y = y/i
-    z = z/i
+    x = x / i
+    y = y / i
+    z = z / i
 
     return (x, y, z)
 
@@ -525,7 +528,7 @@ def mol_centroid_in_central_unit_cell(fragments, coords, cif_data, minu, minv, m
         minu = round(minu, 3)
         minv = round(minv, 3)
         minw = round(minw, 3)
-        if (minu+1 <= u < minu+2) and (minv+1 <= v < minv+2) and (minw+1 <= w < minw+2):
+        if (minu + 1 <= u < minu + 2) and (minv + 1 <= v < minv + 2) and (minw + 1 <= w < minw + 2):
             new_atoms.extend(atoms)
 
     # if len(new_atoms) != len(atoms_uc):
@@ -559,7 +562,7 @@ def centroid_atmList(atmList):
         y += atm["y"]
         z += atm["z"]
         i += 1
-    return x/i, y/i, z/i
+    return x / i, y / i, z / i
 
 
 def coords_midpoint(atom_list):
@@ -576,7 +579,7 @@ def coords_midpoint(atom_list):
 def midpoint(list_):
     """Return midpoint between a list of values in 1D."""
 
-    return np.min(list_) + (np.max(list_) - np.min(list_))/2
+    return np.min(list_) + (np.max(list_) - np.min(list_)) / 2
 
 
 def add_two_frags_together(fragList, atm_list, frag1_id, frag2_id):
@@ -584,9 +587,9 @@ def add_two_frags_together(fragList, atm_list, frag1_id, frag2_id):
 
     new_id = min(frag1_id, frag2_id)
     other_id = max(frag1_id, frag2_id)
-    new_fragList = fragList[:new_id] # copy up to the combined one
+    new_fragList = fragList[:new_id]  # copy up to the combined one
 
-    new_frag = { # combined frag
+    new_frag = {  # combined frag
         'ids': fragList[frag1_id]['ids'] + fragList[frag2_id]['ids'],
         'syms': fragList[frag1_id]['syms'] + fragList[frag2_id]['syms'],
         'grp': new_id,
@@ -597,15 +600,15 @@ def add_two_frags_together(fragList, atm_list, frag1_id, frag2_id):
 
     new_frag = add_centroid_frags([new_frag], atm_list)
 
-    new_fragList.extend(new_frag) # add new frag
+    new_fragList.extend(new_frag)  # add new frag
 
     # add up to removed frag
-    new_fragList.extend(fragList[new_id+1:other_id])
+    new_fragList.extend(fragList[new_id + 1:other_id])
 
     # change rest of values
-    for i in range(other_id+1,len(fragList)):
-        fragList[i]['grp'] = i-1
-        fragList[i]['name'] = f"frag{i-1}"
+    for i in range(other_id + 1, len(fragList)):
+        fragList[i]['grp'] = i - 1
+        fragList[i]['name'] = f"frag{i - 1}"
         new_fragList.append(fragList[i])
 
     for i in range(len(new_fragList)):
@@ -626,7 +629,6 @@ def combination_smallest_distance(fragList, combinations):
 
         # FOR EACH CATION, ANION PAIR
         for cat, an in comb:
-
             tot_dist += distance(
                 [fragList[cat]['cx'], fragList[cat]['cy'], fragList[cat]['cz']],
                 [fragList[an]['cx'], fragList[an]['cy'], fragList[an]['cz']]
@@ -715,7 +717,7 @@ def pair_ions_lowest_dist(fragList, atmList):
         if not remove:
             anions.append(comb)
 
-    cations = [cations_list] * len(anions_list)   # make list of lists of cations
+    cations = [cations_list] * len(anions_list)  # make list of lists of cations
 
     # make combinations
     combinations = []
@@ -731,7 +733,7 @@ def pair_ions_lowest_dist(fragList, atmList):
     # sort combinations largest val to smallest so can combine frags safely
     comb_sorted = []
     starting_frags = len(fragList)
-    for i in range(starting_frags-1, -1, -1):
+    for i in range(starting_frags - 1, -1, -1):
         for _ in comb:
             if i in _:
                 comb_sorted.append(_)
@@ -755,7 +757,7 @@ def central_frag_with_charge(frag_list, atmList, midpointx, midpointy, midpointz
     distance to the midpoint for each fragment."""
 
     min_dist = 10000
-    min_ion  = None
+    min_ion = None
     for frag in frag_list:
         if frag['chrg'] == charge or charge == "any":
             dist = 0
@@ -767,8 +769,8 @@ def central_frag_with_charge(frag_list, atmList, midpointx, midpointy, midpointz
             dist = dist / len(frag['ids'])
             # IF SMALLEST DIST
             if dist < min_dist:
-                min_dist  = dist
-                min_ion   = frag['grp']
+                min_dist = dist
+                min_ion = frag['grp']
     return min_ion
 
 
@@ -812,7 +814,7 @@ def pairing_atoms(coords):
     """Put atoms in boxes and loop through boxes to get atom pairs."""
 
     uniq_atoms = list(set([i[0] for i in coords]))
-    rcov_dict  = dist_threshold(uniq_atoms, 1.2)
+    rcov_dict = dist_threshold(uniq_atoms, 1.2)
 
     # BOX LENGTH
     box_length = 4
@@ -844,10 +846,10 @@ def pairing_atoms(coords):
 
     # BOXES CONTAINER
     Box_list = {}
-    for bx in range(Nbx+1):
-        for by in range(Nby+1):
-            for bz in range(Nbz+1):
-                Box_list[bx + Nbx*by + Nbx*Nby*bz] = []
+    for bx in range(Nbx + 1):
+        for by in range(Nby + 1):
+            for bz in range(Nbz + 1):
+                Box_list[bx + Nbx * by + Nbx * Nby * bz] = []
     # print("Number of boxes = ", len(Box_list))
 
     # ASSIGN ATOMS TO BOXES
@@ -855,32 +857,31 @@ def pairing_atoms(coords):
         bx = math.floor((atom[1] - minx) / box_length)
         by = math.floor((atom[2] - miny) / box_length)
         bz = math.floor((atom[3] - minz) / box_length)
-        Box_list[bx + Nbx*by + Nbx*Nby*bz].append([id, atom])
+        Box_list[bx + Nbx * by + Nbx * Nby * bz].append([id, atom])
 
     # LOOP OVER BOXES
     group = 0
     for bx in range(Nbx):
         for by in range(Nby):
             for bz in range(Nbz):
-                box_id = bx + Nbx*by + Nbx*Nby*bz # BOX ID
+                box_id = bx + Nbx * by + Nbx * Nby * bz  # BOX ID
 
                 # FOR ATOMS IN BOX
                 for id1, atom1 in Box_list[box_id]:
 
-                    con_vwd = False # CONNECTED TO OTHER ATOMS
+                    con_vwd = False  # CONNECTED TO OTHER ATOMS
 
                     # LOOP OVER SURROUNDING BOXES
-                    for sbx in range(max(0, bx-1), min(bx+2, Nbx+1)):
-                        for sby in range(max(0, by-1), min(by+2, Nby+1)):
-                            for sbz in range(max(0, bz-1), min(bz+2, Nbz+1)):
+                    for sbx in range(max(0, bx - 1), min(bx + 2, Nbx + 1)):
+                        for sby in range(max(0, by - 1), min(by + 2, Nby + 1)):
+                            for sbz in range(max(0, bz - 1), min(bz + 2, Nbz + 1)):
 
-                                sbox_id = sbx + Nbx*sby + Nbx*Nby*sbz
+                                sbox_id = sbx + Nbx * sby + Nbx * Nby * sbz
 
                                 for id2, atom2 in Box_list[sbox_id]:
 
                                     # DONT DO FOR SAME ATOM
                                     if not id2 == id1:
-
                                         # DO THE THING THAT NEEDS DOING FOR EACH PAIR
                                         group, group_dict, con_vwd = \
                                             update_groups(id1, id2, coords, group, group_dict, con_vwd, rcov_dict)
@@ -955,7 +956,7 @@ def make_sphere_from_whole_unit_cell(fragList_uc, atmList_uc, mx, my, mz, Nx, Ny
     frag."""
 
     fragList = copy.deepcopy(fragList_uc)
-    atmList  = copy.deepcopy(atmList_uc)
+    atmList = copy.deepcopy(atmList_uc)
     n_frags = len(fragList)
     n_atoms = len(atmList)
     # print(cif_data["_cell_length_a"], cif_data["_cell_length_b"], cif_data["_cell_length_c"])
@@ -972,20 +973,20 @@ def make_sphere_from_whole_unit_cell(fragList_uc, atmList_uc, mx, my, mz, Nx, Ny
                 x, y, z = convert_fract2carte_atom(nx, ny, nz, factors_convert_fract2cartes(cif_data))
                 # loop over frags
                 for frag in fragList_uc:
-                    n_atoms_copy = n_atoms # reset number of atoms in case last frag was not added
-                    new_atoms = [] # store atoms of new_frag
-                    new_atom_ids = [] # store ids as lists for frag data
+                    n_atoms_copy = n_atoms  # reset number of atoms in case last frag was not added
+                    new_atoms = []  # store atoms of new_frag
+                    new_atom_ids = []  # store ids as lists for frag data
                     for id in frag['ids']:
                         # new atom
                         new_atoms.append({
-                            'id'  : n_atoms_copy,
-                            'sym' : atmList_uc[id]['sym'],
-                            'x'   : atmList_uc[id]['x'] + x,
-                            'y'   : atmList_uc[id]['y'] + y,
-                            'z'   : atmList_uc[id]['z'] + z,
-                            'nu'  : atmList_uc[id]['nu'],
-                            'mas' : atmList_uc[id]['mas'],
-                            'vdw' : atmList_uc[id]['vdw'],
+                            'id': n_atoms_copy,
+                            'sym': atmList_uc[id]['sym'],
+                            'x': atmList_uc[id]['x'] + x,
+                            'y': atmList_uc[id]['y'] + y,
+                            'z': atmList_uc[id]['z'] + z,
+                            'nu': atmList_uc[id]['nu'],
+                            'mas': atmList_uc[id]['mas'],
+                            'vdw': atmList_uc[id]['vdw'],
                         })
                         new_atom_ids.append(n_atoms_copy)
                         n_atoms_copy += 1
@@ -1010,12 +1011,11 @@ def make_sphere_from_whole_unit_cell(fragList_uc, atmList_uc, mx, my, mz, Nx, Ny
                     elif dist_cutoff == 'smallest':
                         dist = closest_distance(mx, my, mz, new_atoms)
 
-                    if dist < r_thres: # distance of midpoint to frag
-                        atmList.extend(new_atoms) # add atoms to atmList
-                        n_atoms = n_atoms_copy # update number of atoms
-                        fragList.append(new_frag) # add to fragList
-                        n_frags += 1 # update number of frags
-
+                    if dist < r_thres:  # distance of midpoint to frag
+                        atmList.extend(new_atoms)  # add atoms to atmList
+                        n_atoms = n_atoms_copy  # update number of atoms
+                        fragList.append(new_frag)  # add to fragList
+                        n_frags += 1  # update number of frags
 
     print(f"{len(fragList)} fragments in sphere")
 
@@ -1027,74 +1027,64 @@ def make_sphere_from_whole_unit_cell(fragList_uc, atmList_uc, mx, my, mz, Nx, Ny
 ### JSON --------------------------------------------
 
 
-def exess_mbe_template(frag_ids, frag_charges, symbols, geometry, method="RIMP2", nfrag_stop=None, basis="cc-pVDZ",
+def exess_mbe_template(frags, frag_charges, symbols, geometry, method="RIMP2", nfrag_stop=None, basis="cc-pVDZ",
                        auxbasis="cc-pVDZ-RIFIT", number_checkpoints=3, ref_mon=0, level=4):
     """Json many body energy exess template."""
 
     # FRAGS
     mons = len(frag_charges)
     # WARNING: this is not the correct number of nfrags if the trimers and tetramers have cutoffs
-    total_frags = int(mons + mons-1 + (mons-1)*(mons-2)/2 + (mons-1)*(mons-2)*(mons-3)/6)
+    total_frags = int(mons + mons - 1 + (mons - 1) * (mons - 2) / 2 + (mons - 1) * (mons - 2) * (mons - 3) / 6)
 
     if not nfrag_stop:
         nfrag_stop = total_frags
 
     # CHECKPOINTING
     ncheck = number_checkpoints + 1
-    ncheck = int((nfrag_stop+ncheck)/ncheck)
+    ncheck = int((nfrag_stop + ncheck) / ncheck)
 
     dict_ = {
-        "driver"    : "energy",
-        "model"     : {
-            "method"        : method,
-            "basis"         : basis,
-            "aux_basis"     : auxbasis,
-            "fragmentation" : True
+        "driver": "energy",
+        "model": {
+            "method": method,
+            "basis": basis,
+            "aux_basis": auxbasis,
+            "frag_enabled": True
         },
-        "keywords"  : {
-            "scf"           : {
-                "niter"             : 100,
-                "ndiis"             : 10,
-                "dele"              : 1E-8,
-                "rmsd"              : 1E-8,
-                "dynamic_threshold" : 10,
-                "debug"             : False,
+        "keywords": {
+            "scf": {
+                "niter": 100,
+                "ndiis": 10,
+                "scf_conv": 1E-8,
+                "dynamic_screening_threshold_exp": 10,
+                "convergence_metric": "Energy",
+                "qnext": True
             },
             "frag": {
-                "method"                : "MBE",
-                "level"                 : level,
-                "ngpus_per_group"       : 4,
-                "lattice_energy_calc"   : True,
-                "reference_monomer"     : ref_mon,
-                "dimer_cutoff"          : 100*angstrom2bohr,
-                "dimer_mp2_cutoff"      : 25*angstrom2bohr,
-                "trimer_cutoff"         : 35*angstrom2bohr,
-                "trimer_mp2_cutoff"     : 20*angstrom2bohr,
-                "tetramer_cutoff"       : 20*angstrom2bohr,
-                "tetramer_mp2_cutoff"   : 10*angstrom2bohr
+                "method": "MBE",
+                "fragmentation_level": level,
+                "ngpus_per_node": 4,
+                "fragmented_energy_type": 'InteractivityEnergy',
+                "reference_monomer": ref_mon,
+                "dimer_cutoff": 100 * angstrom2bohr,
+                "dimer_mp2_cutoff": 25 * angstrom2bohr,
+                "trimer_cutoff": 35 * angstrom2bohr,
+                "trimer_mp2_cutoff": 20 * angstrom2bohr
             },
-            "FMO": {
-                "fmo_type": "CPF",
-                "mulliken_approx": False,
-                "esp_cutoff": 100000,
-                "esp_maxit": 50
-            },
-            "check_rst": {
-                "checkpoint": True,
-                "restart": False,
-                "nfrag_check": min(ncheck, total_frags),
-                "nfrag_stop": min(nfrag_stop, total_frags)
+            "export": {},
+            "guess": {},
+            "debug": {
+                "scf_print_level": 2,
+                "rimp2_print_level": 2,
+                "subfragment_xyz_debug": True,
+                "print_xyz_coords": True
             }
         },
-        "molecule"  : {
-            "fragments"     : {
-                "nfrag"             : len(frag_charges),
-                "fragid"            : frag_ids,
-                "fragment_charges"  : frag_charges,
-                "broken_bonds"      : [],
-            },
-            "symbols"       : symbols,
-            "geometry"      : geometry,
+        "topology": {
+            "fragments": frags,
+            "fragment_charges": frag_charges,
+            "symbols": symbols,
+            "geometry": geometry,
         },
     }
 
@@ -1106,25 +1096,24 @@ def exess_mbe_template(frag_ids, frag_charges, symbols, geometry, method="RIMP2"
 
 def make_json_from_frag_ids(frag_indexs, fragList, atmList, nfrag_stop=None, basis="cc-pVDZ", auxbasis="cc-pVDZ-RIFIT",
                             number_checkpoints=1, ref_mon=None, level=4, method="RIMP2"):
-
-    symbols      = []
-    frag_ids     = []
+    symbols = []
+    frags = []
     frag_charges = []
-    geometry     = []
-    xyz_lines    = []
-    num          = 0
+    geometry = []
+    xyz_lines = []
+    num = 0
     # FOR EACH FRAGMENT
     for index in frag_indexs:
         num += 1
         frag_charges.append(fragList[index]['chrg'])
+        frags.append(fragList[index]['ids'])
         # FOR EACH ATOM OF THAT FRAG
         for id in fragList[index]['ids']:
             symbols.append(atmList[id]['sym'])
-            frag_ids.append(num)
             geometry.extend([atmList[id]['x'], atmList[id]['y'], atmList[id]['z']])
             xyz_lines.append(f"{atmList[id]['sym']} {atmList[id]['x']} {atmList[id]['y']} {atmList[id]['z']}")
     # TO JSON
-    json_dict = exess_mbe_template(frag_ids, frag_charges, symbols, geometry, method, nfrag_stop, basis, auxbasis,
+    json_dict = exess_mbe_template(frags, frag_charges, symbols, geometry, method, nfrag_stop, basis, auxbasis,
                                    number_checkpoints, ref_mon=ref_mon, level=level)
     json_lines = format_json_input_file(json_dict)
 
@@ -1140,7 +1129,7 @@ def format_json_input_file(dict_):
     newlines = []
     list_ = False
     geometry_ = False
-    list_lines =  []
+    list_lines = []
     for line in lines.split('\n'):
 
         if "]" in line and not '[]' in line:
@@ -1212,7 +1201,7 @@ def writeCentralMBE(center_frag_id, fragList, fragList_init, atmList):
 
     # mbe of central
     json_lines, lines = make_json_from_frag_ids(frag_ids_in_central, fragList_init, atmList, level=2,
-                                                       ref_mon=0, number_checkpoints=0)
+                                                ref_mon=0, number_checkpoints=0)
 
     # WRITE FILES
     write_file('sphere_central.json', json_lines)
@@ -1241,7 +1230,8 @@ def write_xyz(output_fname, atom_list):
         of.write("\n\n")
 
         for atom in atom_list:
-            of.write("{sym:<5} {x:>15.10f} {y:>15.10f} {z:>15.10f}\n".format(sym=atom[0], x=atom[1], y=atom[2], z=atom[3]))
+            of.write(
+                "{sym:<5} {x:>15.10f} {y:>15.10f} {z:>15.10f}\n".format(sym=atom[0], x=atom[1], y=atom[2], z=atom[3]))
 
 
 def write_xyz_atmList(filename, atmList):
@@ -1259,7 +1249,7 @@ def write_xyz_zoe(filename, lines):
     with open(filename, 'w') as w:
         w.write(f"{len(lines)}\n\n")
         for line in lines:
-            w.write(line+"\n")
+            w.write(line + "\n")
 
 
 def write_central_frag(fragList, atmList, center_ip_id, mx, my, mz):
@@ -1290,7 +1280,6 @@ def write_file(filename, lines):
 
 
 def main(cif_file, r=100, debug=False, dist_cutoff='smallest', pair_mols="all"):
-
     timer = Timer(to_print=debug)
 
     # Step 2: Read into the CIF file and extract data from it into a dictionary
@@ -1330,7 +1319,7 @@ def main(cif_file, r=100, debug=False, dist_cutoff='smallest', pair_mols="all"):
     # Get min of coords
     minu, maxu, minv, maxv, minw, maxw = fract_min_max_from_cart(atoms_333_c, cif_data)
     if debug:
-        print("Length of x, y, z in fractional coordinates", maxu-minu, maxv-minv, maxw-minw)
+        print("Length of x, y, z in fractional coordinates", maxu - minu, maxv - minv, maxw - minw)
 
     # Find molecules with centroid in central cell and write to file
     atoms_whole_uc = mol_centroid_in_central_unit_cell(fragments, atoms_333_c, cif_data, minu, minv, minw, atoms_uc)
