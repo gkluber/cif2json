@@ -1,18 +1,17 @@
 #!/usr/bin/env python3
-import glob
-import sys
-import math
-import json
 import copy
-import time
+import glob
 import itertools
+import json
+import math
+import sys
+import time
+
 import CifFile
 import numpy as np
 import qcelemental as qcel
-from itertools import permutations
 
-sys.path.append("/Users/zoes/apps/qcp-python-app/qcp")
-sys.path.append("/g/data/k96/apps/qcp/qcp")
+sys.path.append("C:/Users/gklub/Desktop/PhD Work/qcp-python-app/qcp")
 from system import systemData
 
 
@@ -207,7 +206,8 @@ def read_cif(cif_name):
             sym_op = cif_dblock["_space_group_symop_operation_xyz"]
         except KeyError:
             print(
-                "\n ERROR: Cif file does not have an item: either \"_symmetry_equiv_pos_as_xyz\" or \"_space_group_symop_operation_xyz\".")
+                "\n ERROR: Cif file does not have an item: either \"_symmetry_equiv_pos_as_xyz\" or "
+                "\"_space_group_symop_operation_xyz\".")
             sys.exit()
 
     for xyz_op in sym_op:
@@ -229,7 +229,10 @@ def read_cif(cif_name):
     for w in cif_dblock["_atom_site_fract_z"]:
         cif_data["_atom_site_fract_z"].append(float(w.split("(")[0]))
 
-    return (cif_data)
+    cif_data['_bonds'] = list(zip(cif_dblock['_geom_bond_atom_site_label_1'],
+                                  cif_dblock['_geom_bond_atom_site_label_2']))
+
+    return cif_data
 
 
 def asym_unit(cif_data):
@@ -1027,22 +1030,9 @@ def make_sphere_from_whole_unit_cell(fragList_uc, atmList_uc, mx, my, mz, Nx, Ny
 ### JSON --------------------------------------------
 
 
-def exess_mbe_template(frags, frag_charges, symbols, geometry, method="RIMP2", nfrag_stop=None, basis="cc-pVDZ",
-                       auxbasis="cc-pVDZ-RIFIT", number_checkpoints=3, ref_mon=0, level=4):
+def exess_mbe_template(frags, frag_charges, symbols, geometry, bonds=None, method="RIMP2", basis="cc-pVDZ",
+                       auxbasis="cc-pVDZ-RIFIT", ref_mon=0, level=3):
     """Json many body energy exess template."""
-
-    # FRAGS
-    mons = len(frag_charges)
-    # WARNING: this is not the correct number of nfrags if the trimers and tetramers have cutoffs
-    total_frags = int(mons + mons - 1 + (mons - 1) * (mons - 2) / 2 + (mons - 1) * (mons - 2) * (mons - 3) / 6)
-
-    if not nfrag_stop:
-        nfrag_stop = total_frags
-
-    # CHECKPOINTING
-    ncheck = number_checkpoints + 1
-    ncheck = int((nfrag_stop + ncheck) / ncheck)
-
     dict_ = {
         "driver": "energy",
         "model": {
@@ -1084,27 +1074,25 @@ def exess_mbe_template(frags, frag_charges, symbols, geometry, method="RIMP2", n
             "fragments": frags,
             "fragment_charges": frag_charges,
             "symbols": symbols,
-            "geometry": geometry,
+            "geometry": geometry
         },
     }
 
-    if number_checkpoints == 0:
-        del dict_["keywords"]["check_rst"]
+    if bonds is not None:
+        dict_['topology']['connectivity'] = bonds
 
     return dict_
 
 
-def make_json_from_frag_ids(frag_indexs, fragList, atmList, nfrag_stop=None, basis="cc-pVDZ", auxbasis="cc-pVDZ-RIFIT",
-                            number_checkpoints=1, ref_mon=None, level=4, method="RIMP2"):
+def make_json_from_frag_ids(frag_indexs, fragList, atmList, bonds=None, basis="cc-pVDZ", auxbasis="cc-pVDZ-RIFIT", ref_mon=None,
+                            level=3, method="RIMP2"):
     symbols = []
     frags = []
     frag_charges = []
     geometry = []
     xyz_lines = []
-    num = 0
     # FOR EACH FRAGMENT
     for index in frag_indexs:
-        num += 1
         frag_charges.append(fragList[index]['chrg'])
         frags.append(fragList[index]['ids'])
         # FOR EACH ATOM OF THAT FRAG
@@ -1113,8 +1101,8 @@ def make_json_from_frag_ids(frag_indexs, fragList, atmList, nfrag_stop=None, bas
             geometry.extend([atmList[id]['x'], atmList[id]['y'], atmList[id]['z']])
             xyz_lines.append(f"{atmList[id]['sym']} {atmList[id]['x']} {atmList[id]['y']} {atmList[id]['z']}")
     # TO JSON
-    json_dict = exess_mbe_template(frags, frag_charges, symbols, geometry, method, nfrag_stop, basis, auxbasis,
-                                   number_checkpoints, ref_mon=ref_mon, level=level)
+    json_dict = exess_mbe_template(frags, frag_charges, symbols, geometry, bonds, method=method, basis=basis,
+                                   auxbasis=auxbasis, ref_mon=ref_mon, level=level)
     json_lines = format_json_input_file(json_dict)
 
     return json_lines, xyz_lines
@@ -1201,7 +1189,7 @@ def writeCentralMBE(center_frag_id, fragList, fragList_init, atmList):
 
     # mbe of central
     json_lines, lines = make_json_from_frag_ids(frag_ids_in_central, fragList_init, atmList, level=2,
-                                                ref_mon=0, number_checkpoints=0)
+                                                ref_mon=0)
 
     # WRITE FILES
     write_file('sphere_central.json', json_lines)
@@ -1350,8 +1338,7 @@ def main(cif_file, r=100, debug=False, dist_cutoff='smallest', pair_mols="all"):
 
     # Create overall json
     nfrag_stop = 500
-    json_lines, xyz_lines = make_json_from_frag_ids(list(range(len(fragList))), fragList, atmList,
-                                                    ref_mon=center_frag_id, nfrag_stop=nfrag_stop)
+    json_lines, xyz_lines = make_json_from_frag_ids(list(range(len(fragList))), fragList, atmList, ref_mon=center_frag_id)
     write_xyz_zoe("sphere.xyz", xyz_lines)
     write_file("sphere.json", json_lines)
 
