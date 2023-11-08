@@ -1055,7 +1055,7 @@ def exess_mbe_template(frags, frag_charges, symbols, geometry, bonds=None, metho
                 "fragmentation_level": level,
                 "ngpus_per_node": 4,
                 "fragmented_energy_type": 'InteractivityEnergy',
-                "reference_monomer": ref_mon,
+                "reference_fragment": ref_mon,
                 "monomer_cutoff": int(round(400 * angstrom2bohr)),
                 "monomer_mp2_cutoff": int(round(100 * angstrom2bohr)),
                 "dimer_cutoff": int(round(100 * angstrom2bohr)),
