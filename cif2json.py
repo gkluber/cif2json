@@ -1056,10 +1056,10 @@ def exess_mbe_template(frags, frag_charges, symbols, geometry, bonds=None, metho
                 "ngpus_per_node": 4,
                 "fragmented_energy_type": 'InteractivityEnergy',
                 "reference_monomer": ref_mon,
-                "dimer_cutoff": 100 * angstrom2bohr,
-                "dimer_mp2_cutoff": 25 * angstrom2bohr,
-                "trimer_cutoff": 35 * angstrom2bohr,
-                "trimer_mp2_cutoff": 20 * angstrom2bohr
+                "dimer_cutoff": int(round(100 * angstrom2bohr)),
+                "dimer_mp2_cutoff": int(round(25 * angstrom2bohr)),
+                "trimer_cutoff": int(round(35 * angstrom2bohr)),
+                "trimer_mp2_cutoff": int(round(20 * angstrom2bohr))
             },
             "export": {},
             "guess": {},
